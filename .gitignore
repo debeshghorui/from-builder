@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnpm-store
+
+# Environment
+# setup.sh copies .env.example and symlinks it into apps/* and packages/*
+.env
+.env.*
+!.env.example
+
+# Turborepo
+.turbo
+
+# Next.js (apps/web)
+.next/
+out/
+next-env.d.ts
+
+# tsup (apps/api)
+dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Lint and test caches
+.eslintcache
+coverage/
+*.lcov
+.nyc_output
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Vercel
+.vercel
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# Local certificates
+*.pem
