@@ -8,12 +8,19 @@ const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");
 
 export const authRouter = router({
-  getSupportedAuthenticationProviders: publicProcedure
-    .meta({ openapi: { method: "GET", path: getPath("/supported-providers"), tags: TAGS } })
-    .input(zodUndefinedModel)
-    .output(z.readonly(z.array(getAuthenticationMethodOutputSchema)))
-    .query(async () => {
-      const supportedMethods = await userService.getAuthenticationMethods();
-      return supportedMethods;
-    }),
+    getSupportedAuthenticationProviders: publicProcedure
+        .meta({
+            openapi: {
+                method: "GET",
+                path: getPath("/supported-providers"),
+                tags: TAGS,
+            },
+        })
+        .input(zodUndefinedModel)
+        .output(z.readonly(z.array(getAuthenticationMethodOutputSchema)))
+        .query(async () => {
+            const supportedMethods =
+                await userService.getAuthenticationMethods();
+            return supportedMethods;
+        }),
 });
