@@ -1,8 +1,11 @@
 CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"full_name" varchar(80) NOT NULL,
+	"first_name" varchar(80) NOT NULL,
+	"last_name" varchar(80) NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"email_verified" boolean DEFAULT false,
+	"password_hash" text,
+	"password_salt" text,
 	"profile_image_url" text,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp,

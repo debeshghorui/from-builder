@@ -1,31 +1,60 @@
-import { db } from "@repo/database";
-import { usersTable } from "@repo/database/schema";
-import { env } from "../env";
-import { googleOAuth2Client } from "../clients/google-oauth";
-import { GetAuthenticationMethodOutputSchema } from "./model";
+import { randomBytes, createHmac } from "node:crypto";
+
+import { db, eq } from "@repo/database";
+import { usersTable } from "@repo/database/models/user";
+
+import {
+    CreateUserWithEmailAndPasswordInputType,
+    CreateUserWithEmailAndPasswordInputSchema,
+} from "./model";
 
 class UserService {
-    public async getAuthenticationMethods(): Promise<
-        ReadonlyArray<GetAuthenticationMethodOutputSchema>
-    > {
-        const supportedAuthenticationProviders: GetAuthenticationMethodOutputSchema[] =
-            [];
+    private async getUserByEmail(email: string) {
+        const user = await db
+            .select()
+            .from(usersTable)
+            .where(eq(usersTable.email, email));
 
-        const isGoogleConfigured = !!(
-            env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET
-        );
+        if (!user || user.length === 0) return null;
+        return user[0];
+    }
 
-        if (isGoogleConfigured) {
-            const url = googleOAuth2Client.generateAuthUrl();
-            supportedAuthenticationProviders.push({
-                provider: "GOOGLE_OAUTH",
-                displayName: "Google",
-                displayText: "Signin with Google",
-                authUrl: url,
+    public async createUserWithEmailAndPassword(
+        payload: CreateUserWithEmailAndPasswordInputType,
+    ) {
+        const { firstName, lastName, email, password, profileImageUrl } =
+            await CreateUserWithEmailAndPasswordInputSchema.parseAsync(payload);
+
+        // Check if user with email already exists
+        const existingUserWithEmail = await this.getUserByEmail(email);
+        if (existingUserWithEmail)
+            throw new Error("User with email already exists");
+
+        // Generate salt and hash password
+        const salt = randomBytes(16).toString("hex");
+        const hash = createHmac("sha256", salt).update(password).digest("hex");
+
+        // Insert user into database
+        const userInsertResult = await db
+            .insert(usersTable)
+            .values({
+                firstName,
+                lastName,
+                email,
+                passwordHash: hash,
+                passwordSalt: salt,
+                profileImageUrl,
+            })
+            .returning({
+                id: usersTable.id,
             });
-        }
 
-        return supportedAuthenticationProviders;
+        if (!userInsertResult || userInsertResult.length === 0)
+            throw new Error("Failed to create user");
+
+        return {
+            id: userInsertResult[0]?.id,
+        };
     }
 }
 
