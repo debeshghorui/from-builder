@@ -1,19 +1,19 @@
 import express from "express";
-import { logger } from "@repo/logger";
 import cors from "cors";
+import { apiReference } from "@scalar/express-api-reference";
 
+import { logger } from "@repo/logger";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import {
     generateOpenApiDocument,
     createOpenApiExpressMiddleware,
 } from "trpc-to-openapi";
-import { apiReference } from "@scalar/express-api-reference";
-
 import { serverRouter, createContext } from "@repo/trpc/server";
 
 import { env } from "./env";
 
 export const app = express();
+
 const openApiDocument = generateOpenApiDocument(serverRouter, {
     title: "Streamyst OpenAPI",
     version: "1.0.0",
@@ -30,16 +30,16 @@ if (env.NODE_ENV !== "prod") {
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
     return res.json({ message: "Streamyst is up and running..." });
 });
 
-app.get("/health", (req, res) => {
+app.get("/health", (_, res) => {
     return res.json({ message: "Streamyst server is healthy", healthy: true });
 });
 
 logger.debug(`openapi.json: ${env.BASE_URL}/openapi.json`);
-app.get("/openapi.json", (req, res) => {
+app.get("/openapi.json", (_, res) => {
     return res.json(openApiDocument);
 });
 
