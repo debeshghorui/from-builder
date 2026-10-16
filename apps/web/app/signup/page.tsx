@@ -7,12 +7,13 @@ import { SignupForm } from "~/components/signup-form";
 import { trpc } from "~/trpc/client";
 
 export default function SignupPage() {
-    const signup = trpc.auth.createUserWithEmailAndPassword.useMutation();
+    const { mutateAsync: createUserWithEmailAndPassword, isPending } =
+        trpc.auth.createUserWithEmailAndPassword.useMutation();
     const [message, setMessage] = useState("");
 
     async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (signup.isPending) return;
+        if (isPending) return;
         setMessage("");
 
         const form = event.currentTarget;
@@ -68,12 +69,19 @@ export default function SignupPage() {
 
         try {
             setMessage("Creating your account...");
-            await signup.mutateAsync({
-                firstName,
-                lastName: lastNameParts.join(" "),
-                email,
-                password,
-            });
+            await createUserWithEmailAndPassword(
+                {
+                    firstName,
+                    lastName: lastNameParts.join(" "),
+                    email,
+                    password,
+                },
+                {
+                    onSuccess: () => {
+                        setMessage("Your account has been created.");
+                    },
+                },
+            );
             setMessage("Your account has been created.");
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "";
