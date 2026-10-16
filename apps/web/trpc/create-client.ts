@@ -10,7 +10,9 @@ export const createTRPCHttpBatchClientClient = (
 ) => {
     const c = opts?.enableStreaming ? httpBatchStreamLink : httpLink;
     return c({
-        url: env.NEXT_PUBLIC_API_URL ?? "/trpc",
+        // This client is also used during Next.js server rendering, where fetch
+        // cannot resolve a relative URL. The API runs on port 8000 in dev.
+        url: env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/trpc",
         fetch(url, options) {
             return fetch(url, {
                 ...options,
