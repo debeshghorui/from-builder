@@ -49,11 +49,15 @@ class UserService {
                 id: usersTable.id,
             });
 
-        if (!userInsertResult || userInsertResult.length === 0)
+        if (
+            !userInsertResult ||
+            userInsertResult.length === 0 ||
+            !userInsertResult[0]?.id
+        )
             throw new Error("Failed to create user");
 
         return {
-            id: userInsertResult[0]?.id,
+            id: userInsertResult[0].id,
         };
     }
 }
