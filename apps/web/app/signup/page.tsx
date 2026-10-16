@@ -4,11 +4,10 @@ import { GalleryVerticalEnd } from "lucide-react";
 import { useState } from "react";
 
 import { SignupForm } from "~/components/signup-form";
-import { trpc } from "~/trpc/client";
+import { useSignup } from "~/hooks/api/auth";
 
 export default function SignupPage() {
-    const { mutateAsync: createUserWithEmailAndPassword, isPending } =
-        trpc.auth.createUserWithEmailAndPassword.useMutation();
+    const { createUserWithEmailAndPasswordAsync, isPending } = useSignup();
     const [message, setMessage] = useState("");
 
     async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
@@ -69,7 +68,7 @@ export default function SignupPage() {
 
         try {
             setMessage("Creating your account...");
-            await createUserWithEmailAndPassword(
+            await createUserWithEmailAndPasswordAsync(
                 {
                     firstName,
                     lastName: lastNameParts.join(" "),
