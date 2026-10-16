@@ -23,7 +23,11 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
 if (env.NODE_ENV !== "prod") {
     app.use(
         cors({
-            origin: "*",
+            // Cannot use "*" when frontend sends credentials: "include".
+            // The browser blocks any credentialed request whose response has
+            // Access-Control-Allow-Origin: * (CORS spec, section 3.2.2).
+            origin: env.FRONTEND_URL ?? "http://localhost:3000",
+            credentials: true,
         }),
     );
 }
