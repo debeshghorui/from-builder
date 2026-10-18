@@ -1,7 +1,10 @@
 import { trpc } from "~/trpc/client";
+import { toast } from "sonner";
 
 // Create User With Email And Password Hook
 export const useSignup = () => {
+    const utils = trpc.useUtils();
+
     const {
         mutateAsync: createUserWithEmailAndPasswordAsync,
         mutate: createUserWithEmailAndPassword,
@@ -13,7 +16,14 @@ export const useSignup = () => {
         failureReason,
         failureCount,
         status,
-    } = trpc.auth.createUserWithEmailAndPassword.useMutation();
+    } = trpc.auth.createUserWithEmailAndPassword.useMutation({
+        onSuccess: () => {
+            utils.auth.getLoggedInUserInfo.invalidate();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to create user");
+        },
+    });
 
     return {
         createUserWithEmailAndPasswordAsync,
@@ -31,6 +41,8 @@ export const useSignup = () => {
 
 // Sign In User With Email And Password Hook
 export const useSignin = () => {
+    const utils = trpc.useUtils();
+
     const {
         mutateAsync: signInUserWithEmailAndPasswordAsync,
         mutate: signInUserWithEmailAndPassword,
@@ -42,13 +54,54 @@ export const useSignin = () => {
         failureReason,
         failureCount,
         status,
-    } = trpc.auth.signInUserWithEmailAndPassword.useMutation();
+    } = trpc.auth.signInUserWithEmailAndPassword.useMutation({
+        onSuccess: () => {
+            utils.auth.getLoggedInUserInfo.invalidate();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to sign in");
+        },
+        onSettled: () => {
+            utils.auth.getLoggedInUserInfo.invalidate();
+        },
+    });
 
     return {
         signInUserWithEmailAndPasswordAsync,
         signInUserWithEmailAndPassword,
         isPending,
         isIdle,
+        isSuccess,
+        isError,
+        error,
+        failureReason,
+        failureCount,
+        status,
+    };
+};
+
+// Get Logged In User Info Hook
+export const useGetLoggedInUserInfo = () => {
+    const {
+        data: user,
+        isPending,
+        isFetched,
+        isFetching,
+        isLoading,
+        isSuccess,
+        isError,
+        error,
+        failureReason,
+        failureCount,
+        status,
+    } = trpc.auth.getLoggedInUserInfo.useQuery();
+
+    return {
+        user,
+        isPending,
+        isFetched,
+        isFetching,
+        isLoading,
         isSuccess,
         isError,
         error,
