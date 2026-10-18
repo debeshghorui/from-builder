@@ -1,3 +1,4 @@
+import * as jwt from "jsonwebtoken";
 import { randomBytes, createHmac } from "node:crypto";
 
 import { db, eq } from "@repo/database";
@@ -6,7 +7,10 @@ import { usersTable } from "@repo/database/models/user";
 import {
     CreateUserWithEmailAndPasswordInputType,
     CreateUserWithEmailAndPasswordInputSchema,
+    UserTokenPayloadType,
+    UserTokenPayloadSchema,
 } from "./model";
+import { env } from "../env";
 
 class UserService {
     private async getUserByEmail(email: string) {
@@ -17,6 +21,24 @@ class UserService {
 
         if (!user || user.length === 0) return null;
         return user[0];
+    }
+
+    private async generateUserToken(payload: UserTokenPayloadType) {
+        const { id, email, profileImageUrl } =
+            await UserTokenPayloadSchema.parseAsync(payload);
+        const token = jwt.sign({ id, email, profileImageUrl }, env.JWT_SECRET, {
+            expiresIn: "1h",
+        });
+        const refreshToken = jwt.sign(
+            { id, email, profileImageUrl },
+            env.JWT_REFRESH_SECRET,
+            { expiresIn: "7d" },
+        );
+
+        return {
+            token,
+            refreshToken,
+        };
     }
 
     public async createUserWithEmailAndPassword(
@@ -56,8 +78,19 @@ class UserService {
         )
             throw new Error("Failed to create user");
 
+        const userId = userInsertResult[0].id;
+
+        // Generate user token
+        const { token, refreshToken } = await this.generateUserToken({
+            id: userId,
+            email,
+            profileImageUrl,
+        });
+
         return {
-            id: userInsertResult[0].id,
+            id: userId,
+            token,
+            refreshToken,
         };
     }
 }

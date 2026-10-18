@@ -23,15 +23,18 @@ export const authRouter = router({
         .mutation(async ({ input }) => {
             const { firstName, lastName, email, password } = input;
 
-            const { id } = await userService.createUserWithEmailAndPassword({
-                firstName,
-                lastName,
-                email,
-                password,
-            });
+            const { id, token, refreshToken } =
+                await userService.createUserWithEmailAndPassword({
+                    firstName,
+                    lastName,
+                    email,
+                    password,
+                });
 
             return {
                 userId: id,
+                token,
+                refreshToken,
             };
         }),
 });

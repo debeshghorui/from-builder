@@ -20,3 +20,15 @@ export const CreateUserWithEmailAndPasswordInputSchema = z.object({
 export type CreateUserWithEmailAndPasswordInputType = z.infer<
     typeof CreateUserWithEmailAndPasswordInputSchema
 >;
+
+export const UserTokenPayloadSchema = z.object({
+    id: z.string().uuid().describe("The uuid of the user"),
+    email: z.string().email().describe("The email of the user"),
+    profileImageUrl: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("The profile image URL of the user"),
+});
+
+export type UserTokenPayloadType = z.infer<typeof UserTokenPayloadSchema>;
