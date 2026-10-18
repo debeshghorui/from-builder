@@ -25,10 +25,10 @@ export function LoginForm({
             <FieldGroup>
                 <div className="flex flex-col items-center gap-1 text-center">
                     <h1 className="text-2xl font-bold">
-                        Signin to your account
+                        Sign in to your account
                     </h1>
                     <p className="text-muted-foreground text-sm text-balance">
-                        Enter your email below to signin to your account
+                        Enter your email below to sign in to your account
                     </p>
                 </div>
                 <Field>
@@ -36,6 +36,7 @@ export function LoginForm({
                     <Input
                         id="email"
                         type="email"
+                        suppressHydrationWarning
                         placeholder="m@example.com"
                         required
                     />
@@ -79,7 +80,7 @@ export function LoginForm({
                     </div>
                 </Field>
                 <Field>
-                    <Button type="submit">Signin</Button>
+                    <Button type="submit">Sign in</Button>
                 </Field>
                 <FieldSeparator>Or continue with</FieldSeparator>
                 <Field>
@@ -93,7 +94,7 @@ export function LoginForm({
                                 fill="currentColor"
                             />
                         </svg>
-                        Signin with GitHub
+                        Sign in with GitHub
                     </Button>
                     <FieldDescription className="text-center">
                         Don&apos;t have an account?{" "}

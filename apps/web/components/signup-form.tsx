@@ -45,6 +45,7 @@ export function SignupForm({
                     <Input
                         id="email"
                         type="email"
+                        suppressHydrationWarning
                         placeholder="m@example.com"
                         required
                     />
