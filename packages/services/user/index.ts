@@ -1,5 +1,6 @@
 import * as jwt from "jsonwebtoken";
 import { randomBytes, createHmac } from "node:crypto";
+import { logger } from "@repo/logger";
 
 import { db, eq } from "@repo/database";
 import { usersTable } from "@repo/database/models/user";
@@ -40,8 +41,41 @@ class UserService {
         };
     }
 
+    private async verifyUserToken(
+        token: string,
+    ): Promise<UserTokenPayloadType> {
+        try {
+            const verificationResult = jwt.verify(
+                token,
+                env.JWT_SECRET,
+            ) as UserTokenPayloadType;
+            return verificationResult;
+        } catch (error) {
+            logger.error(`Error verifying and decoding user token: ${error}`);
+            throw new Error("Invalid token");
+        }
+    }
+
     private async generateHashed(password: string, salt: string) {
         return createHmac("sha256", salt).update(password).digest("hex");
+    }
+
+    private async getUserInfoById(id: string) {
+        const user = await db
+            .select({
+                id: usersTable.id,
+                firstName: usersTable.firstName,
+                lastName: usersTable.lastName,
+                email: usersTable.email,
+                profileImageUrl: usersTable.profileImageUrl,
+            })
+            .from(usersTable)
+            .where(eq(usersTable.id, id));
+
+        const userInfo = user[0];
+        if (!userInfo) throw new Error(`User with ID ${id} dose not exists`);
+
+        return userInfo;
     }
 
     public async createUserWithEmailAndPassword(
@@ -133,6 +167,12 @@ class UserService {
             token,
             refreshToken,
         };
+    }
+
+    public async verifyAndDecodeUserToken(token: string) {
+        const { id } = await this.verifyUserToken(token);
+        const userInfo = await this.getUserInfoById(id);
+        return { ...userInfo };
     }
 }
 
