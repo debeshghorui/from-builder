@@ -2,15 +2,18 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 
 import {
     createCookieFactory,
+    type CreateCookieFactory,
     getCookieFactory,
+    type GetCookieFactory,
     clearCookieFactory,
+    type ClearCookieFactory,
 } from "./utils/cookie";
 
 // context interface
 export interface TRPCContext {
-    createCookie: ReturnType<typeof createCookieFactory>;
-    getCookie: ReturnType<typeof getCookieFactory>;
-    clearCookie: ReturnType<typeof clearCookieFactory>;
+    createCookie: ReturnType<CreateCookieFactory>;
+    getCookie: ReturnType<GetCookieFactory>;
+    clearCookie: ReturnType<ClearCookieFactory>;
 }
 
 // create context
