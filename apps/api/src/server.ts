@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { apiReference } from "@scalar/express-api-reference";
 
 import { logger } from "@repo/logger";
@@ -20,17 +21,17 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
     baseUrl: env.BASE_URL.concat("/api"),
 });
 
-if (env.NODE_ENV !== "prod") {
-    app.use(
-        cors({
-            // Cannot use "*" when frontend sends credentials: "include".
-            // The browser blocks any credentialed request whose response has
-            // Access-Control-Allow-Origin: * (CORS spec, section 3.2.2).
-            origin: env.FRONTEND_URL ?? "http://localhost:3000",
-            credentials: true,
-        }),
-    );
-}
+app.use(
+    cors({
+        // Cannot use "*" when frontend sends credentials: "include".
+        // The browser blocks any credentialed request whose response has
+        // Access-Control-Allow-Origin: * (CORS spec, section 3.2.2).
+        origin: env.FRONTEND_URL ?? "http://localhost:3000",
+        credentials: true,
+    }),
+);
+
+app.use(cookieParser());
 
 app.use(express.json());
 
