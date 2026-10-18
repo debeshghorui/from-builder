@@ -9,6 +9,8 @@ import {
     CreateUserWithEmailAndPasswordInputSchema,
     UserTokenPayloadType,
     UserTokenPayloadSchema,
+    SignInUserWithEmailAndPasswordInputType,
+    signInUserWithEmailAndPasswordInputSchema,
 } from "./model";
 import { env } from "../env";
 
@@ -24,21 +26,22 @@ class UserService {
     }
 
     private async generateUserToken(payload: UserTokenPayloadType) {
-        const { id, email, profileImageUrl } =
-            await UserTokenPayloadSchema.parseAsync(payload);
-        const token = jwt.sign({ id, email, profileImageUrl }, env.JWT_SECRET, {
+        const { id, email } = await UserTokenPayloadSchema.parseAsync(payload);
+        const token = jwt.sign({ id, email }, env.JWT_SECRET, {
             expiresIn: "1h",
         });
-        const refreshToken = jwt.sign(
-            { id, email, profileImageUrl },
-            env.JWT_REFRESH_SECRET,
-            { expiresIn: "7d" },
-        );
+        const refreshToken = jwt.sign({ id, email }, env.JWT_REFRESH_SECRET, {
+            expiresIn: "7d",
+        });
 
         return {
             token,
             refreshToken,
         };
+    }
+
+    private async generateHashed(password: string, salt: string) {
+        return createHmac("sha256", salt).update(password).digest("hex");
     }
 
     public async createUserWithEmailAndPassword(
@@ -54,7 +57,7 @@ class UserService {
 
         // Generate salt and hash password
         const salt = randomBytes(16).toString("hex");
-        const hash = createHmac("sha256", salt).update(password).digest("hex");
+        const hash = await this.generateHashed(password, salt);
 
         // Insert user into database
         const userInsertResult = await db
@@ -84,11 +87,49 @@ class UserService {
         const { token, refreshToken } = await this.generateUserToken({
             id: userId,
             email,
-            profileImageUrl,
         });
 
         return {
             id: userId,
+            token,
+            refreshToken,
+        };
+    }
+
+    public async signInUserWithEmailAndPassword(
+        payload: SignInUserWithEmailAndPasswordInputType,
+    ) {
+        const { email, password } =
+            await signInUserWithEmailAndPasswordInputSchema.parseAsync(payload);
+
+        // Check if user with email already exists
+        const existingUserWithEmail = await this.getUserByEmail(email);
+        if (!existingUserWithEmail)
+            throw new Error(`User with email ${email} does not exist`);
+
+        // Check if user has a password hash and salt
+        if (
+            !existingUserWithEmail.passwordHash ||
+            !existingUserWithEmail.passwordSalt
+        )
+            throw new Error(`Invalid authentication method`);
+
+        // Check if password is correct
+        const hash = await this.generateHashed(
+            password,
+            existingUserWithEmail.passwordSalt,
+        );
+        if (hash !== existingUserWithEmail.passwordHash)
+            throw new Error("Invalid Email address or password");
+
+        // Generate user token
+        const { token, refreshToken } = await this.generateUserToken({
+            id: existingUserWithEmail.id,
+            email: existingUserWithEmail.email,
+        });
+
+        return {
+            id: existingUserWithEmail.id,
             token,
             refreshToken,
         };

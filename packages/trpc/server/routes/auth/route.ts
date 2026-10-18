@@ -5,6 +5,8 @@ import { setAuthenticationCookie } from "../../utils/cookie";
 import {
     createUserWithEmailAndPasswordInputSchema,
     createUserWithEmailAndPasswordOutputSchema,
+    signInUserWithEmailAndPasswordInputSchema,
+    signInUserWithEmailAndPasswordOutputSchema,
 } from "./model";
 
 const TAGS = ["Authentication"];
@@ -28,6 +30,36 @@ export const authRouter = router({
                 await userService.createUserWithEmailAndPassword({
                     firstName,
                     lastName,
+                    email,
+                    password,
+                });
+
+            setAuthenticationCookie(ctx, token);
+
+            return {
+                userId: id,
+                token,
+                refreshToken,
+            };
+        }),
+    signInUserWithEmailAndPassword: publicProcedure
+        .meta({
+            openapi: {
+                method: "POST",
+                path: getPath("/signInUserWithEmailAndPassword"),
+                tags: TAGS,
+            },
+        })
+        .input(signInUserWithEmailAndPasswordInputSchema)
+        .output(signInUserWithEmailAndPasswordOutputSchema)
+        .mutation(async ({ input, ctx }) => {
+            const { email, password } =
+                await signInUserWithEmailAndPasswordInputSchema.parseAsync(
+                    input,
+                );
+
+            const { id, token, refreshToken } =
+                await userService.signInUserWithEmailAndPassword({
                     email,
                     password,
                 });
