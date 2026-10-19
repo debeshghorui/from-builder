@@ -2,12 +2,15 @@
 
 import { GalleryVerticalEnd } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { SignupForm } from "~/components/signup-form";
 import { useSignup } from "~/hooks/api/auth";
 
 export default function SignupPage() {
+    const router = useRouter();
+
     const { createUserWithEmailAndPasswordAsync, isPending } = useSignup();
     const [message, setMessage] = useState("");
 
@@ -79,6 +82,7 @@ export default function SignupPage() {
                 {
                     onSuccess: () => {
                         setMessage("Your account has been created.");
+                        router.replace("/dashboard");
                     },
                 },
             );

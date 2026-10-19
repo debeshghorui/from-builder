@@ -1,5 +1,5 @@
 {
-    "name": "",
+    "name": "from-builder",
     "private": true,
     "scripts": {
         "build": "dotenv -- turbo build",

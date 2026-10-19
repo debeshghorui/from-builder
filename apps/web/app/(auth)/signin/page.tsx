@@ -2,12 +2,15 @@
 
 import { GalleryVerticalEnd } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { LoginForm } from "~/components/signin-form";
 import { useSignin } from "~/hooks/api/auth";
 
 export default function LoginPage() {
+    const router = useRouter();
+
     const { signInUserWithEmailAndPasswordAsync, isPending } = useSignin();
     const [message, setMessage] = useState("");
 
@@ -41,7 +44,14 @@ export default function LoginPage() {
         }
 
         try {
-            await signInUserWithEmailAndPasswordAsync({ email, password });
+            await signInUserWithEmailAndPasswordAsync(
+                { email, password },
+                {
+                    onSuccess: () => {
+                        router.replace("/dashboard");
+                    },
+                },
+            );
             setMessage("You are signed in.");
         } catch {
             setMessage(

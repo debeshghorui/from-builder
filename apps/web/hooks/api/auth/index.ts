@@ -81,7 +81,7 @@ export const useSignin = () => {
 };
 
 // Get Logged In User Info Hook
-export const useGetLoggedInUserInfo = () => {
+export const useUser = () => {
     const {
         data: user,
         isPending,
