@@ -97,8 +97,7 @@ export const authRouter = router({
 
             return {
                 userId: id,
-                firstName,
-                lastName,
+                fullName: `${firstName} ${lastName}`,
                 email,
                 profileImageUrl,
             };

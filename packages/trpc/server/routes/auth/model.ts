@@ -42,16 +42,11 @@ export const getLoggedInUserInfoInputSchema = z
 // Get Logged In User Info Output Schema
 export const getLoggedInUserInfoOutputSchema = z.object({
     userId: z.string().describe("The ID of the logged in user"),
-    firstName: z
+    fullName: z
         .string()
         .min(1)
         .max(255)
-        .describe("The first name of the logged in user"),
-    lastName: z
-        .string()
-        .min(1)
-        .max(255)
-        .describe("The last name of the logged in user"),
+        .describe("The full name of the logged in user"),
     email: z
         .string()
         .email()
