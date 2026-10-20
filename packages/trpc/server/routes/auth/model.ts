@@ -32,6 +32,15 @@ export const signInUserWithEmailAndPasswordOutputSchema = z.object({
     userId: z.string().describe("The ID of the signed in user"),
 });
 
+// Refresh User Token Routes Input And Output Schemas
+export const refreshUserTokenInputSchema = z
+    .undefined()
+    .describe("Refresh the session using the refresh token cookie");
+
+export const refreshUserTokenOutputSchema = z.object({
+    userId: z.string().uuid().describe("The ID of the refreshed user"),
+});
+
 // * Get Logged In User Info Routes Input And Output Schemas
 
 // Get Logged In User Info Input Schema

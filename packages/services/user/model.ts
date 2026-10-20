@@ -39,3 +39,22 @@ export const signInUserWithEmailAndPasswordInputSchema = z.object({
 export type SignInUserWithEmailAndPasswordInputType = z.infer<
     typeof signInUserWithEmailAndPasswordInputSchema
 >;
+
+// Refresh user token input and output schemas
+export const RefreshUserTokenInputSchema = z.object({
+    refreshToken: z.string().min(1),
+});
+
+export type RefreshUserTokenInputType = z.infer<
+    typeof RefreshUserTokenInputSchema
+>;
+
+export const RefreshUserTokenOutputSchema = z.object({
+    id: z.string().uuid(),
+    token: z.string().min(1),
+    refreshToken: z.string().min(1),
+});
+
+export type RefreshUserTokenOutputType = z.infer<
+    typeof RefreshUserTokenOutputSchema
+>;

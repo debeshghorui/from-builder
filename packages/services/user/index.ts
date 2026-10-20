@@ -12,6 +12,10 @@ import {
     UserTokenPayloadSchema,
     SignInUserWithEmailAndPasswordInputType,
     signInUserWithEmailAndPasswordInputSchema,
+    RefreshUserTokenInputSchema,
+    RefreshUserTokenOutputSchema,
+    RefreshUserTokenInputType,
+    RefreshUserTokenOutputType,
 } from "./model";
 import { env } from "../env";
 
@@ -53,6 +57,18 @@ class UserService {
         } catch (error) {
             logger.error(`Error verifying and decoding user token: ${error}`);
             throw new Error("Invalid token");
+        }
+    }
+
+    private async verifyRefreshToken(
+        token: string,
+    ): Promise<UserTokenPayloadType> {
+        try {
+            const payload = jwt.verify(token, env.JWT_REFRESH_SECRET);
+            return await UserTokenPayloadSchema.parseAsync(payload);
+        } catch (error) {
+            logger.error(`Error verifying refresh token: ${error}`);
+            throw new Error("Invalid refresh token");
         }
     }
 
@@ -172,6 +188,20 @@ class UserService {
     public async verifyAndDecodeUserToken(token: string) {
         const { id } = await this.verifyUserToken(token);
         return { id };
+    }
+
+    public async refreshUserToken(
+        payload: RefreshUserTokenInputType,
+    ): Promise<RefreshUserTokenOutputType> {
+        const { refreshToken } =
+            await RefreshUserTokenInputSchema.parseAsync(payload);
+        const { id, email } = await this.verifyRefreshToken(refreshToken);
+        const user = await this.getUserByEmail(email);
+
+        if (!user || user.id !== id) throw new Error("Invalid refresh token");
+
+        const tokens = await this.generateUserToken({ id, email });
+        return await RefreshUserTokenOutputSchema.parseAsync({ id, ...tokens });
     }
 }
 

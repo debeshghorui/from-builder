@@ -7,6 +7,12 @@ import {
     type GetCookieFactory,
     clearCookieFactory,
     type ClearCookieFactory,
+    createAuthenticationCookieFactory,
+    type CreateAuthenticationCookieFactory,
+    getAuthenticationCookieFactory,
+    type GetAuthenticationCookieFactory,
+    clearAuthenticationCookieFactory,
+    type ClearAuthenticationCookieFactory,
     createRefreshTokenCookieFactory,
     type CreateRefreshTokenCookieFactory,
     getRefreshTokenCookieFactory,
@@ -24,6 +30,9 @@ export interface TRPCContext {
     createCookie: ReturnType<CreateCookieFactory>;
     getCookie: ReturnType<GetCookieFactory>;
     clearCookie: ReturnType<ClearCookieFactory>;
+    setAuthenticationCookie: ReturnType<CreateAuthenticationCookieFactory>;
+    getAuthenticationCookie: ReturnType<GetAuthenticationCookieFactory>;
+    clearAuthenticationCookie: ReturnType<ClearAuthenticationCookieFactory>;
     setRefreshTokenCookie: ReturnType<CreateRefreshTokenCookieFactory>;
     getRefreshTokenCookie: ReturnType<GetRefreshTokenCookieFactory>;
     clearRefreshTokenCookie: ReturnType<ClearRefreshTokenCookieFactory>;
@@ -39,6 +48,9 @@ export async function createContext({
         createCookie: createCookieFactory(res),
         getCookie: getCookieFactory(req),
         clearCookie: clearCookieFactory(res),
+        setAuthenticationCookie: createAuthenticationCookieFactory(res),
+        getAuthenticationCookie: getAuthenticationCookieFactory(req),
+        clearAuthenticationCookie: clearAuthenticationCookieFactory(res),
         setRefreshTokenCookie: createRefreshTokenCookieFactory(res),
         getRefreshTokenCookie: getRefreshTokenCookieFactory(req),
         clearRefreshTokenCookie: clearRefreshTokenCookieFactory(res),

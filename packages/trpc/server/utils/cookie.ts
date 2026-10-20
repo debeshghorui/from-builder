@@ -83,9 +83,42 @@ export type ClearCookieFactory = typeof clearCookieFactory;
 
 const AUTHENTICATION_COOKIE_NAME = "authentication-token";
 
+export function createAuthenticationCookieFactory(res: Response) {
+    const createCookie = createCookieFactory(res);
+    return function setAuthenticationCookieValue(accessToken: string) {
+        createCookie(AUTHENTICATION_COOKIE_NAME, accessToken, {
+            ...defaultCookieOptions,
+            maxAge: ONE_HOUR,
+        });
+    };
+}
+
+export type CreateAuthenticationCookieFactory =
+    typeof createAuthenticationCookieFactory;
+
+export function getAuthenticationCookieFactory(req: Request) {
+    const getCookie = getCookieFactory(req);
+    return function readAuthenticationCookie() {
+        return getCookie(AUTHENTICATION_COOKIE_NAME);
+    };
+}
+
+export type GetAuthenticationCookieFactory =
+    typeof getAuthenticationCookieFactory;
+
+export function clearAuthenticationCookieFactory(res: Response) {
+    const clearCookie = clearCookieFactory(res);
+    return function removeAuthenticationCookie() {
+        clearCookie(AUTHENTICATION_COOKIE_NAME);
+    };
+}
+
+export type ClearAuthenticationCookieFactory =
+    typeof clearAuthenticationCookieFactory;
+
 // set authentication cookie
 export function setAuthenticationCookie(ctx: TRPCContext, accessToken: string) {
-    ctx.createCookie(AUTHENTICATION_COOKIE_NAME, accessToken);
+    ctx.setAuthenticationCookie(accessToken);
 }
 
 // set authentication cookie type
@@ -93,7 +126,7 @@ export type SetAuthenticationCookie = typeof setAuthenticationCookie;
 
 // get authentication cookie
 export function getAuthenticationCookie(ctx: TRPCContext) {
-    return ctx.getCookie(AUTHENTICATION_COOKIE_NAME);
+    return ctx.getAuthenticationCookie();
 }
 
 // get authentication cookie type
@@ -101,7 +134,7 @@ export type GetAuthenticationCookie = typeof getAuthenticationCookie;
 
 // clear authentication cookie
 export function clearAuthenticationCookie(ctx: TRPCContext) {
-    ctx.clearCookie(AUTHENTICATION_COOKIE_NAME);
+    ctx.clearAuthenticationCookie();
 }
 
 // clear authentication cookie type

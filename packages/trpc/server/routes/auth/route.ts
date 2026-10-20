@@ -1,7 +1,7 @@
+import { TRPCError } from "@trpc/server";
 import { userService } from "../../services";
 import { publicProcedure, protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { setAuthenticationCookie } from "../../utils/cookie";
 import {
     createUserWithEmailAndPasswordInputSchema,
     createUserWithEmailAndPasswordOutputSchema,
@@ -9,6 +9,8 @@ import {
     signInUserWithEmailAndPasswordOutputSchema,
     getLoggedInUserInfoInputSchema,
     getLoggedInUserInfoOutputSchema,
+    refreshUserTokenInputSchema,
+    refreshUserTokenOutputSchema,
 } from "./model";
 
 const TAGS = ["Authentication"];
@@ -36,7 +38,8 @@ export const authRouter = router({
                     password,
                 });
 
-            setAuthenticationCookie(ctx, token);
+            ctx.setAuthenticationCookie(token);
+            ctx.setRefreshTokenCookie(refreshToken);
 
             return {
                 userId: id,
@@ -66,13 +69,45 @@ export const authRouter = router({
                     password,
                 });
 
-            setAuthenticationCookie(ctx, token);
+            ctx.setAuthenticationCookie(token);
+            ctx.setRefreshTokenCookie(refreshToken);
 
             return {
                 userId: id,
                 token,
                 refreshToken,
             };
+        }),
+    refreshUserToken: publicProcedure
+        .meta({
+            openapi: {
+                method: "POST",
+                path: getPath("/refreshUserToken"),
+                tags: TAGS,
+            },
+        })
+        .input(refreshUserTokenInputSchema)
+        .output(refreshUserTokenOutputSchema)
+        .mutation(async ({ ctx }) => {
+            const refreshToken = ctx.getRefreshTokenCookie();
+
+            if (!refreshToken) {
+                throw new TRPCError({
+                    code: "UNAUTHORIZED",
+                    message: "Refresh token cookie is missing",
+                });
+            }
+
+            const {
+                id,
+                token,
+                refreshToken: rotatedRefreshToken,
+            } = await userService.refreshUserToken({ refreshToken });
+
+            ctx.setAuthenticationCookie(token);
+            ctx.setRefreshTokenCookie(rotatedRefreshToken);
+
+            return { userId: id };
         }),
     getLoggedInUserInfo: protectedProcedure
         .meta({
