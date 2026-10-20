@@ -9,11 +9,16 @@ import {
     type ClearCookieFactory,
 } from "./utils/cookie";
 
+export interface TRPCCtxUser {
+    id: string;
+}
+
 // context interface
 export interface TRPCContext {
     createCookie: ReturnType<CreateCookieFactory>;
     getCookie: ReturnType<GetCookieFactory>;
     clearCookie: ReturnType<ClearCookieFactory>;
+    user?: TRPCCtxUser | null;
 }
 
 // create context
@@ -25,6 +30,7 @@ export async function createContext({
         createCookie: createCookieFactory(res),
         getCookie: getCookieFactory(req),
         clearCookie: clearCookieFactory(res),
+        user: undefined,
     };
 
     return ctx;
