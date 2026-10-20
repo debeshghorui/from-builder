@@ -17,6 +17,7 @@ import {
     IconSearch,
     IconSettings,
     IconUsers,
+    IconAiAgent,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "~/components/nav-documents";
@@ -39,8 +40,6 @@ const data = {
     navMain: [
         { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
         { title: "Forms", url: "/dashboard/forms", icon: IconClipboardText },
-        { title: "Analytics", url: "#", icon: IconChartBar },
-        { title: "Projects", url: "#", icon: IconFolder },
         { title: "Team", url: "#", icon: IconUsers },
     ],
     navClouds: [
@@ -81,7 +80,7 @@ const data = {
     documents: [
         { name: "Data Library", url: "#", icon: IconDatabase },
         { name: "Reports", url: "#", icon: IconReport },
-        { name: "Word Assistant", url: "#", icon: IconFileWord },
+        { name: "Assistant", url: "#", icon: IconAiAgent },
     ],
 };
 
