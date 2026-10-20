@@ -95,6 +95,7 @@ export const useGetFormById = (formId: string) => {
 
 export const useUpdateForm = () => {
     const utils = trpc.useUtils();
+
     const {
         mutateAsync: updateFormAsync,
         mutate: updateForm,
@@ -113,6 +114,7 @@ export const useUpdateForm = () => {
                 utils.form.getFormById.invalidate({ id: input.id }),
             ]);
         },
+
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to update form");
         },
@@ -134,6 +136,7 @@ export const useUpdateForm = () => {
 
 export const useDeleteForm = () => {
     const utils = trpc.useUtils();
+
     const {
         mutateAsync: deleteFormAsync,
         mutate: deleteForm,
@@ -152,6 +155,7 @@ export const useDeleteForm = () => {
                 utils.form.getFormById.invalidate({ id: input.id }),
             ]);
         },
+
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to delete form");
         },
@@ -173,6 +177,7 @@ export const useDeleteForm = () => {
 
 export const usePublishForm = () => {
     const utils = trpc.useUtils();
+
     const {
         mutateAsync: publishFormAsync,
         mutate: publishForm,
@@ -191,6 +196,7 @@ export const usePublishForm = () => {
                 utils.form.getFormById.invalidate({ id: input.id }),
             ]);
         },
+
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to publish form");
         },
@@ -212,6 +218,7 @@ export const usePublishForm = () => {
 
 export const useUnpublishForm = () => {
     const utils = trpc.useUtils();
+
     const {
         mutateAsync: unpublishFormAsync,
         mutate: unpublishForm,
@@ -230,6 +237,7 @@ export const useUnpublishForm = () => {
                 utils.form.getFormById.invalidate({ id: input.id }),
             ]);
         },
+
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to unpublish form");
         },
@@ -280,6 +288,7 @@ export const useGetFormFields = (formId: string) => {
 
 export const useCreateFormField = () => {
     const utils = trpc.useUtils();
+
     const {
         mutateAsync: createFormFieldAsync,
         mutate: createFormField,
@@ -295,6 +304,7 @@ export const useCreateFormField = () => {
         onSuccess: async (_field, input) => {
             await utils.form.getFormFields.invalidate({ id: input.formId });
         },
+
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to create form field");
         },
@@ -316,6 +326,7 @@ export const useCreateFormField = () => {
 
 export const useUpdateFormField = () => {
     const utils = trpc.useUtils();
+
     const {
         mutateAsync: updateFormFieldAsync,
         mutate: updateFormField,
@@ -331,6 +342,7 @@ export const useUpdateFormField = () => {
         onSuccess: async (_field, input) => {
             await utils.form.getFormFields.invalidate({ id: input.formId });
         },
+
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to update form field");
         },
@@ -352,6 +364,7 @@ export const useUpdateFormField = () => {
 
 export const useDeleteFormField = () => {
     const utils = trpc.useUtils();
+
     const {
         mutateAsync: deleteFormFieldAsync,
         mutate: deleteFormField,
@@ -367,6 +380,7 @@ export const useDeleteFormField = () => {
         onSuccess: async (_field, input) => {
             await utils.form.getFormFields.invalidate({ id: input.formId });
         },
+
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to delete form field");
         },

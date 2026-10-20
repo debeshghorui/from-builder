@@ -20,6 +20,7 @@ export const useSignup = () => {
         onSuccess: () => {
             utils.auth.getLoggedInUserInfo.invalidate();
         },
+
         onError: (error) => {
             toast.error(error.message || "Failed to create user");
         },
@@ -58,9 +59,11 @@ export const useSignin = () => {
         onSuccess: () => {
             utils.auth.getLoggedInUserInfo.invalidate();
         },
+
         onError: (error) => {
             toast.error(error.message || "Failed to sign in");
         },
+
         onSettled: () => {
             utils.auth.getLoggedInUserInfo.invalidate();
         },
