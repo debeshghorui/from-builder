@@ -24,12 +24,24 @@ export const protectedProcedure = tRPCContext.procedure.use(
                 message: "user is not logged in",
             });
 
-        const { id } = await userService.verifyAndDecodeUserToken(userToken);
+        let user: Awaited<
+            ReturnType<typeof userService.verifyAndDecodeUserToken>
+        >;
+        try {
+            user = await userService.verifyAndDecodeUserToken(userToken);
+        } catch {
+            // Expired access tokens must return 401 so the web client can
+            // silently exchange the refresh token and retry the request.
+            throw new TRPCError({
+                code: "UNAUTHORIZED",
+                message: "User session is expired or invalid",
+            });
+        }
 
         return next({
             ctx: {
                 ...ctx,
-                user: { id },
+                user,
             },
         });
     },

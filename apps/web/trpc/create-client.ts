@@ -17,7 +17,7 @@ export const createTRPCHttpBatchClientClient = (
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ json: null }),
+            body: JSON.stringify({ json: {} }),
         })
             .then((response) => response.ok)
             .catch(() => false)

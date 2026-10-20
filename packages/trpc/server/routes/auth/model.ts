@@ -34,7 +34,7 @@ export const signInUserWithEmailAndPasswordOutputSchema = z.object({
 
 // Refresh User Token Routes Input And Output Schemas
 export const refreshUserTokenInputSchema = z
-    .undefined()
+    .object({})
     .describe("Refresh the session using the refresh token cookie");
 
 export const signOutUserInputSchema = z
