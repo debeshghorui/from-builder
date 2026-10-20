@@ -11,6 +11,7 @@ import {
     getLoggedInUserInfoOutputSchema,
     refreshUserTokenInputSchema,
     refreshUserTokenOutputSchema,
+    signOutUserInputSchema,
     signOutUserOutputSchema,
 } from "./model";
 
@@ -140,12 +141,19 @@ export const authRouter = router({
                 tags: TAGS,
             },
         })
-        .input(refreshUserTokenInputSchema)
+        .input(signOutUserInputSchema)
         .output(signOutUserOutputSchema)
         .mutation(async ({ ctx }) => {
-            await userService.revokeRefreshToken(ctx.getRefreshTokenCookie());
-            ctx.clearAuthenticationCookie();
-            ctx.clearRefreshTokenCookie();
+            try {
+                await userService.revokeRefreshToken(
+                    ctx.getRefreshTokenCookie(),
+                );
+            } finally {
+                // Always expire the browser session, even if revocation storage
+                // is unavailable. The service treats expired tokens as a no-op.
+                ctx.clearAuthenticationCookie();
+                ctx.clearRefreshTokenCookie();
+            }
             return { success: true };
         }),
     getLoggedInUserInfo: protectedProcedure

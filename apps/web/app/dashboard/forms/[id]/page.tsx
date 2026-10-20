@@ -3,15 +3,27 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import type { RouterOutputs } from "@repo/trpc/client";
 
 import {
     useCreateFormField,
+    useDeleteFormField,
     useGetFormById,
     useGetFormFields,
+    useUpdateFormField,
 } from "~/hooks/api/form";
 import { Button } from "~/components/ui/button";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import {
     Dialog,
     DialogContent,
@@ -22,6 +34,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Textarea } from "~/components/ui/textarea";
 
 const fieldTypes = [
     "TEXT",
@@ -50,31 +63,111 @@ export default function FormBuilderPage() {
     } = useGetFormFields(formId);
     const { createFormFieldAsync, isPending: isCreatingField } =
         useCreateFormField();
+    const { updateFormFieldAsync, isPending: isUpdatingField } =
+        useUpdateFormField();
+    const { deleteFormFieldAsync, isPending: isDeletingField } =
+        useDeleteFormField();
     const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
+    const [editingField, setEditingField] = useState<FormFieldListItem | null>(
+        null,
+    );
+    const [fieldToDelete, setFieldToDelete] =
+        useState<FormFieldListItem | null>(null);
     const [label, setLabel] = useState("");
+    const [description, setDescription] = useState("");
+    const [placeholder, setPlaceholder] = useState("");
+    const [optionsJson, setOptionsJson] = useState("");
+    const [optionsError, setOptionsError] = useState<string | null>(null);
     const [fieldType, setFieldType] = useState<FormFieldType>("TEXT");
     const [isRequired, setIsRequired] = useState(false);
+
+    const resetFieldEditor = () => {
+        setLabel("");
+        setDescription("");
+        setPlaceholder("");
+        setOptionsJson("");
+        setOptionsError(null);
+        setFieldType("TEXT");
+        setIsRequired(false);
+    };
+
+    const openCreateFieldDialog = () => {
+        setEditingField(null);
+        resetFieldEditor();
+        setIsAddFieldOpen(true);
+    };
+
+    const openEditFieldDialog = (field: FormFieldListItem) => {
+        setEditingField(field);
+        setLabel(field.label);
+        setDescription(field.description ?? "");
+        setPlaceholder(field.placeholder ?? "");
+        setOptionsJson(
+            field.options == null
+                ? ""
+                : (JSON.stringify(field.options, null, 2) ?? ""),
+        );
+        setOptionsError(null);
+        setFieldType(field.type);
+        setIsRequired(field.isRequired);
+        setIsAddFieldOpen(true);
+    };
 
     const handleAddField = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const trimmedLabel = label.trim();
         if (!trimmedLabel) return;
 
+        let options: unknown;
+        if (optionsJson.trim()) {
+            try {
+                options = JSON.parse(optionsJson);
+            } catch {
+                setOptionsError("Enter valid JSON for field options.");
+                return;
+            }
+        }
+
+        setOptionsError(null);
         try {
-            await createFormFieldAsync({
+            const fieldInput = {
                 formId,
                 label: trimmedLabel,
+                description: description.trim() || null,
+                placeholder: placeholder.trim() || null,
                 type: fieldType,
                 isRequired,
-            });
+                options: optionsJson.trim() ? options : null,
+            };
+
+            if (editingField) {
+                await updateFormFieldAsync({
+                    ...fieldInput,
+                    id: editingField.id,
+                });
+            } else {
+                await createFormFieldAsync(fieldInput);
+            }
         } catch {
             return;
         }
 
-        setLabel("");
-        setFieldType("TEXT");
-        setIsRequired(false);
+        resetFieldEditor();
+        setEditingField(null);
         setIsAddFieldOpen(false);
+    };
+
+    const handleDeleteField = async () => {
+        if (!fieldToDelete) return;
+        try {
+            await deleteFormFieldAsync({
+                id: fieldToDelete.id,
+                formId,
+            });
+            setFieldToDelete(null);
+        } catch {
+            // The mutation hook displays the error toast and keeps the dialog open.
+        }
     };
 
     if (isFormPending) {
@@ -135,7 +228,7 @@ export default function FormBuilderPage() {
                         </p>
                     </div>
                     <Button
-                        onClick={() => setIsAddFieldOpen(true)}
+                        onClick={openCreateFieldDialog}
                         disabled={(formFields?.length ?? 0) >= 100}
                     >
                         <Plus aria-hidden="true" />
@@ -177,13 +270,41 @@ export default function FormBuilderPage() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="text-muted-foreground flex shrink-0 items-center gap-3 text-xs">
-                                        <span>
-                                            {field.type.replaceAll("_", " ")}
-                                        </span>
-                                        {field.isRequired && (
-                                            <span>Required</span>
-                                        )}
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        <div className="text-muted-foreground flex items-center gap-3 text-xs">
+                                            <span>
+                                                {field.type.replaceAll(
+                                                    "_",
+                                                    " ",
+                                                )}
+                                            </span>
+                                            {field.isRequired && (
+                                                <span>Required</span>
+                                            )}
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            aria-label={`Edit ${field.label}`}
+                                            onClick={() =>
+                                                openEditFieldDialog(field)
+                                            }
+                                        >
+                                            <Pencil aria-hidden="true" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                            aria-label={`Delete ${field.label}`}
+                                            onClick={() =>
+                                                setFieldToDelete(field)
+                                            }
+                                        >
+                                            <Trash2 aria-hidden="true" />
+                                        </Button>
                                     </div>
                                 </li>
                             ),
@@ -198,7 +319,7 @@ export default function FormBuilderPage() {
                         <Button
                             className="mt-4"
                             variant="outline"
-                            onClick={() => setIsAddFieldOpen(true)}
+                            onClick={openCreateFieldDialog}
                         >
                             <Plus aria-hidden="true" />
                             Add first field
@@ -207,12 +328,23 @@ export default function FormBuilderPage() {
                 )}
             </section>
 
-            <Dialog open={isAddFieldOpen} onOpenChange={setIsAddFieldOpen}>
-                <DialogContent>
+            <Dialog
+                open={isAddFieldOpen}
+                onOpenChange={(open) => {
+                    setIsAddFieldOpen(open);
+                    if (!open) setEditingField(null);
+                }}
+            >
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add a form field</DialogTitle>
+                        <DialogTitle>
+                            {editingField
+                                ? "Edit form field"
+                                : "Add a form field"}
+                        </DialogTitle>
                         <DialogDescription>
-                            Choose a label and response type for this field.
+                            Set the label, response type, and other field
+                            details.
                         </DialogDescription>
                     </DialogHeader>
                     <form className="space-y-5" onSubmit={handleAddField}>
@@ -227,6 +359,38 @@ export default function FormBuilderPage() {
                                 value={label}
                                 onChange={(event) =>
                                     setLabel(event.target.value)
+                                }
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="field-description">
+                                Description{" "}
+                                <span className="text-muted-foreground">
+                                    (optional)
+                                </span>
+                            </Label>
+                            <Textarea
+                                id="field-description"
+                                placeholder="Help explain this question"
+                                value={description}
+                                onChange={(event) =>
+                                    setDescription(event.target.value)
+                                }
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="field-placeholder">
+                                Placeholder{" "}
+                                <span className="text-muted-foreground">
+                                    (optional)
+                                </span>
+                            </Label>
+                            <Input
+                                id="field-placeholder"
+                                placeholder="Text shown inside the answer field"
+                                value={placeholder}
+                                onChange={(event) =>
+                                    setPlaceholder(event.target.value)
                                 }
                             />
                         </div>
@@ -249,6 +413,39 @@ export default function FormBuilderPage() {
                                 ))}
                             </select>
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="field-options">
+                                Options{" "}
+                                <span className="text-muted-foreground">
+                                    (optional JSON)
+                                </span>
+                            </Label>
+                            <Textarea
+                                id="field-options"
+                                rows={4}
+                                placeholder={
+                                    '{"choices":["Option 1","Option 2"]}'
+                                }
+                                value={optionsJson}
+                                aria-invalid={Boolean(optionsError)}
+                                onChange={(event) => {
+                                    setOptionsJson(event.target.value);
+                                    setOptionsError(null);
+                                }}
+                            />
+                            {optionsError && (
+                                <p
+                                    className="text-destructive text-sm"
+                                    role="alert"
+                                >
+                                    {optionsError}
+                                </p>
+                            )}
+                            <p className="text-muted-foreground text-xs">
+                                Stored as JSON for field types that need extra
+                                configuration.
+                            </p>
+                        </div>
                         <label className="flex items-center gap-2 text-sm">
                             <input
                                 type="checkbox"
@@ -263,21 +460,65 @@ export default function FormBuilderPage() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={isCreatingField}
-                                onClick={() => setIsAddFieldOpen(false)}
+                                disabled={isCreatingField || isUpdatingField}
+                                onClick={() => {
+                                    setIsAddFieldOpen(false);
+                                    setEditingField(null);
+                                }}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={isCreatingField || !label.trim()}
+                                disabled={
+                                    isCreatingField ||
+                                    isUpdatingField ||
+                                    !label.trim()
+                                }
                             >
-                                {isCreatingField ? "Adding…" : "Add field"}
+                                {isCreatingField || isUpdatingField
+                                    ? editingField
+                                        ? "Saving…"
+                                        : "Adding…"
+                                    : editingField
+                                      ? "Save changes"
+                                      : "Add field"}
                             </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog
+                open={Boolean(fieldToDelete)}
+                onOpenChange={(open) => {
+                    if (!open && !isDeletingField) setFieldToDelete(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this field?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            “{fieldToDelete?.label}” will be removed from this
+                            form.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeletingField}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeletingField}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                void handleDeleteField();
+                            }}
+                        >
+                            {isDeletingField ? "Deleting…" : "Delete field"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </main>
     );
 }

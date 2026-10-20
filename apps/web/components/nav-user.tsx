@@ -25,6 +25,8 @@ import {
     useSidebar,
 } from "~/components/ui/sidebar";
 import type { RouterOutputs } from "@repo/trpc/client";
+import { useRouter } from "next/navigation";
+import { useSignout } from "~/hooks/api/auth";
 
 type User = Partial<RouterOutputs["auth"]["getLoggedInUserInfo"]> & {
     fullName?: string | null;
@@ -46,6 +48,8 @@ function getInitials(name: string | null | undefined) {
 
 export function NavUser({ user }: { user: User }) {
     const { isMobile } = useSidebar();
+    const router = useRouter();
+    const { mutate: signOut, isPending: isSigningOut } = useSignout();
     const name = user.fullName?.trim() || "User";
     const email = user.email?.trim() || "";
     const avatarUrl = user.profileImageUrl || undefined;
@@ -127,7 +131,18 @@ export function NavUser({ user }: { user: User }) {
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                            disabled={isSigningOut}
+                            onSelect={() => {
+                                signOut(
+                                    {},
+                                    {
+                                        onSuccess: () =>
+                                            router.replace("/signin"),
+                                    },
+                                );
+                            }}
+                        >
                             <IconLogout />
                             Log out
                         </DropdownMenuItem>

@@ -83,6 +83,20 @@ export const useSignin = () => {
     };
 };
 
+export const useSignout = () => {
+    const utils = trpc.useUtils();
+    return trpc.auth.signOutUser.useMutation({
+        onSuccess: () => {
+            // Drop the cached user without refetching a query that is now
+            // expected to fail because the session cookie has been cleared.
+            utils.auth.getLoggedInUserInfo.setData(undefined, undefined);
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to sign out");
+        },
+    });
+};
+
 // Get Logged In User Info Hook
 export const useUser = () => {
     const {

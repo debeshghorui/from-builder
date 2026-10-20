@@ -37,6 +37,10 @@ export const refreshUserTokenInputSchema = z
     .undefined()
     .describe("Refresh the session using the refresh token cookie");
 
+export const signOutUserInputSchema = z
+    .object({})
+    .describe("Sign out the current session using its cookies");
+
 export const refreshUserTokenOutputSchema = z.object({
     userId: z.string().uuid().describe("The ID of the refreshed user"),
 });
