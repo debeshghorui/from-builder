@@ -1,23 +1,23 @@
 import type { CookieOptions, Response, Request } from "express";
 
-import { TRPCContext } from "../context";
+import type { TRPCContext } from "../context";
 
 // time constants
 const ONE_MINUTE = 60 * 1000; // milliseconds
 const ONE_HOUR = 60 * ONE_MINUTE;
 const ONE_DAY = 24 * ONE_HOUR;
 const ONE_WEEK = 7 * ONE_DAY;
-const ONE_MONTH = 4 * ONE_WEEK;
-const ONE_YEAR = 12 * ONE_MONTH;
 
 // default cookie options
 const defaultCookieOptions: CookieOptions = {
     path: "/",
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: ONE_YEAR,
+    maxAge: ONE_HOUR,
 };
+
+// * Authentication Cookie Factory
 
 // cookie factory
 export function createCookieFactory(res: Response) {
@@ -36,7 +36,28 @@ export type CreateCookieFactory = typeof createCookieFactory;
 // get cookie factory
 export function getCookieFactory(req: Request) {
     return function getCookie(name: string) {
-        return req.cookies?.[name];
+        const parsedCookies = req.cookies as Record<string, string> | undefined;
+        const parsedValue = parsedCookies?.[name];
+        if (parsedValue !== undefined) return parsedValue;
+
+        const cookieHeader = req.headers.cookie;
+        if (!cookieHeader) return undefined;
+
+        for (const cookie of cookieHeader.split(";")) {
+            const separatorIndex = cookie.indexOf("=");
+            if (separatorIndex < 0) continue;
+
+            const cookieName = cookie.slice(0, separatorIndex).trim();
+            if (cookieName !== name) continue;
+
+            const value = cookie.slice(separatorIndex + 1).trim();
+            try {
+                return decodeURIComponent(value);
+            } catch {
+                return value;
+            }
+        }
+        return undefined;
     };
 }
 
@@ -46,7 +67,12 @@ export type GetCookieFactory = typeof getCookieFactory;
 // clear cookie factory
 export function clearCookieFactory(res: Response) {
     return function clearCookie(name: string) {
-        res.clearCookie(name);
+        res.clearCookie(name, {
+            path: "/",
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        });
     };
 }
 
@@ -80,3 +106,72 @@ export function clearAuthenticationCookie(ctx: TRPCContext) {
 
 // clear authentication cookie type
 export type ClearAuthenticationCookie = typeof clearAuthenticationCookie;
+
+// * Refresh Token Cookies
+
+const REFRESH_TOKEN_COOKIE_NAME = "refresh-token";
+
+// create refresh token cookie factory
+export function createRefreshTokenCookieFactory(res: Response) {
+    const createCookie = createCookieFactory(res);
+
+    return function setRefreshTokenCookieValue(refreshToken: string) {
+        createCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+            ...defaultCookieOptions,
+            maxAge: ONE_WEEK,
+        });
+    };
+}
+
+// create refresh token cookie factory type
+export type CreateRefreshTokenCookieFactory =
+    typeof createRefreshTokenCookieFactory;
+
+// get refresh token cookie factory
+export function getRefreshTokenCookieFactory(req: Request) {
+    const getCookie = getCookieFactory(req);
+
+    return function readRefreshTokenCookie() {
+        return getCookie(REFRESH_TOKEN_COOKIE_NAME);
+    };
+}
+
+// get refresh token cookie factory type
+export type GetRefreshTokenCookieFactory = typeof getRefreshTokenCookieFactory;
+
+// clear refresh token cookie factory
+export function clearRefreshTokenCookieFactory(res: Response) {
+    const clearCookie = clearCookieFactory(res);
+
+    return function removeRefreshTokenCookie() {
+        clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+    };
+}
+
+// clear refresh token cookie factory type
+export type ClearRefreshTokenCookieFactory =
+    typeof clearRefreshTokenCookieFactory;
+
+// set refresh token cookie
+export function setRefreshTokenCookie(ctx: TRPCContext, refreshToken: string) {
+    ctx.setRefreshTokenCookie(refreshToken);
+}
+
+// set refresh token cookie type
+export type SetRefreshTokenCookie = typeof setRefreshTokenCookie;
+
+// get refresh token cookie
+export function getRefreshTokenCookie(ctx: TRPCContext) {
+    return ctx.getRefreshTokenCookie();
+}
+
+// get refresh token cookie type
+export type GetRefreshTokenCookie = typeof getRefreshTokenCookie;
+
+// clear refresh token cookie
+export function clearRefreshTokenCookie(ctx: TRPCContext) {
+    ctx.clearRefreshTokenCookie();
+}
+
+// clear refresh token cookie type
+export type ClearRefreshTokenCookie = typeof clearRefreshTokenCookie;
