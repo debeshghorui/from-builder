@@ -159,11 +159,13 @@ export const formRouter = router({
         .input(formIdInputSchema)
         .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
-            const deletedForm = await formService.deleteForm({
+            const { id } = await formService.deleteForm({
                 ...input,
                 userId: ctx.user.id,
             });
-            return { id: deletedForm.id };
+            return {
+                id,
+            };
         }),
 
     publishForm: protectedProcedure
@@ -182,6 +184,7 @@ export const formRouter = router({
                 ...input,
                 userId: ctx.user.id,
             });
+
             return toFormResponse(publishedForm);
         }),
 
@@ -236,8 +239,12 @@ export const formRouter = router({
         .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            const formField = await formFieldsService.createField(input);
-            return { id: formField.id };
+
+            const { id } = await formFieldsService.createField(input);
+
+            return {
+                id,
+            };
         }),
 
     updateFormField: protectedProcedure
@@ -253,8 +260,12 @@ export const formRouter = router({
         .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            const updatedFormField = await formFieldsService.updateField(input);
-            return { id: updatedFormField.id };
+
+            const { id } = await formFieldsService.updateField(input);
+
+            return {
+                id,
+            };
         }),
 
     deleteFormField: protectedProcedure
@@ -270,7 +281,11 @@ export const formRouter = router({
         .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            const deletedFormField = await formFieldsService.deleteField(input);
-            return { id: deletedFormField.id };
+
+            const { id } = await formFieldsService.deleteField(input);
+
+            return {
+                id,
+            };
         }),
 });
