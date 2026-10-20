@@ -1,12 +1,14 @@
 import { z } from "zod";
 import {
-    CreateFormFieldInputSchema,
     CreateFormInputSchema,
-    FormFieldIdInputSchema,
     FormIdInputSchema,
-    UpdateFormFieldInputSchema,
     UpdateFormInputSchema,
 } from "@repo/services/form/model";
+import {
+    CreateFieldInputSchema,
+    DeleteFieldInputSchema,
+    UpdateFieldInputSchema,
+} from "@repo/services/form-fields/model";
 
 export const createFormInputSchema = CreateFormInputSchema.omit({
     createdBy: true,
@@ -15,9 +17,9 @@ export const updateFormInputSchema = UpdateFormInputSchema.omit({
     userId: true,
 });
 export const formIdInputSchema = FormIdInputSchema;
-export const formFieldIdInputSchema = FormFieldIdInputSchema;
-export const createFormFieldInputSchema = CreateFormFieldInputSchema;
-export const updateFormFieldInputSchema = UpdateFormFieldInputSchema;
+export const formFieldIdInputSchema = DeleteFieldInputSchema;
+export const createFormFieldInputSchema = CreateFieldInputSchema;
+export const updateFormFieldInputSchema = UpdateFieldInputSchema;
 export const noInputSchema = z.undefined();
 
 // Keep password and passwordSalt out of API responses.

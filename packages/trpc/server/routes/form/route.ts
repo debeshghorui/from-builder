@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { formService } from "../../services";
+import { formFieldsService, formService } from "../../services";
 import { protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import {
@@ -169,7 +169,9 @@ export const formRouter = router({
         .output(formFieldsOutputSchema)
         .query(async ({ input, ctx }) => {
             await ensureFormOwner(input.id, ctx.user.id);
-            const formFields = await formService.getFormFields(input);
+            const formFields = await formFieldsService.getFieldsByFormId({
+                formId: input.id,
+            });
             return formFields;
         }),
 
@@ -186,7 +188,7 @@ export const formRouter = router({
         .output(formFieldsOutputSchema.element)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            const formField = await formService.createFormField(input);
+            const formField = await formFieldsService.createField(input);
             return formField;
         }),
 
@@ -203,7 +205,7 @@ export const formRouter = router({
         .output(formFieldsOutputSchema.element)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            const updatedFormField = await formService.updateFormField(input);
+            const updatedFormField = await formFieldsService.updateField(input);
             return updatedFormField;
         }),
 
@@ -220,7 +222,7 @@ export const formRouter = router({
         .output(deletedOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            const deletedFormField = await formService.deleteFormField(input);
+            const deletedFormField = await formFieldsService.deleteField(input);
             return deletedFormField;
         }),
 });

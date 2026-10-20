@@ -2,15 +2,6 @@ import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
 
-export const FormFieldTypeSchema = z.enum([
-    "TEXT",
-    "NUMBER",
-    "EMAIL",
-    "PHONE",
-    "YES_NO",
-    "PASSWORD",
-]);
-
 export const CreateFormInputSchema = z.object({
     title: z.string().trim().min(1).max(55),
     description: z.string().max(255).nullable().optional(),
@@ -49,40 +40,3 @@ export const FormOwnerInputSchema = z.object({
     userId: uuidSchema,
 });
 export type FormOwnerInputType = z.infer<typeof FormOwnerInputSchema>;
-
-export const CreateFormFieldInputSchema = z.object({
-    formId: uuidSchema,
-    label: z.string().trim().min(1).max(55),
-    labelKey: z.string().trim().min(1).max(55),
-    description: z.string().nullable().optional(),
-    placeholder: z.string().nullable().optional(),
-    isRequired: z.boolean().optional(),
-    type: FormFieldTypeSchema,
-    options: z.unknown().optional(),
-    index: z.number().min(0).max(1),
-});
-export type CreateFormFieldInputType = z.infer<
-    typeof CreateFormFieldInputSchema
->;
-
-export const UpdateFormFieldInputSchema = z.object({
-    id: uuidSchema,
-    formId: uuidSchema,
-    label: z.string().trim().min(1).max(55).optional(),
-    labelKey: z.string().trim().min(1).max(55).optional(),
-    description: z.string().nullable().optional(),
-    placeholder: z.string().nullable().optional(),
-    isRequired: z.boolean().optional(),
-    type: FormFieldTypeSchema.optional(),
-    options: z.unknown().optional(),
-    index: z.number().min(0).max(1).optional(),
-});
-export type UpdateFormFieldInputType = z.infer<
-    typeof UpdateFormFieldInputSchema
->;
-
-export const FormFieldIdInputSchema = z.object({
-    id: uuidSchema,
-    formId: uuidSchema,
-});
-export type FormFieldIdInputType = z.infer<typeof FormFieldIdInputSchema>;

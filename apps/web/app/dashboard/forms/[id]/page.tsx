@@ -68,18 +68,10 @@ export default function FormBuilderPage() {
         const nextIndex = Number((lastIndex + 0.01).toFixed(2));
         if (nextIndex > 1) return;
 
-        const labelKey =
-            trimmedLabel
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-|-$/g, "")
-                .slice(0, 55) || "field";
-
         try {
             await createFormFieldAsync({
                 formId,
                 label: trimmedLabel,
-                labelKey,
                 type: fieldType,
                 isRequired,
                 index: nextIndex,
