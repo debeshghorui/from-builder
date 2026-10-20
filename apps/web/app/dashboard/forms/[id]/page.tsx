@@ -60,21 +60,12 @@ export default function FormBuilderPage() {
         const trimmedLabel = label.trim();
         if (!trimmedLabel) return;
 
-        const lastIndex = (formFields ?? []).reduce(
-            (largest: number, field: FormFieldListItem) =>
-                Math.max(largest, Number(field.index) || 0),
-            0,
-        );
-        const nextIndex = Number((lastIndex + 0.01).toFixed(2));
-        if (nextIndex > 1) return;
-
         try {
             await createFormFieldAsync({
                 formId,
                 label: trimmedLabel,
                 type: fieldType,
                 isRequired,
-                index: nextIndex,
             });
         } catch {
             return;

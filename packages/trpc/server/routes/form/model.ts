@@ -64,4 +64,4 @@ export const formFieldOutputSchema = z.object({
 
 export const formListOutputSchema = z.array(formOutputSchema);
 export const formFieldsOutputSchema = z.array(formFieldOutputSchema);
-export const deletedOutputSchema = z.object({ id: z.string() });
+export const idOutputSchema = z.object({ id: z.string() });

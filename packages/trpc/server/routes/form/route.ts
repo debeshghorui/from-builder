@@ -5,7 +5,7 @@ import { generatePath } from "../../utils/path-generator";
 import {
     createFormFieldInputSchema,
     createFormInputSchema,
-    deletedOutputSchema,
+    idOutputSchema,
     formFieldIdInputSchema,
     formFieldsOutputSchema,
     formIdInputSchema,
@@ -18,6 +18,54 @@ import {
 
 const TAGS = ["Forms"];
 const getPath = generatePath("/form");
+
+type FormRecord = Awaited<ReturnType<typeof formService.getFormById>>;
+type FormFieldRecord = Awaited<
+    ReturnType<typeof formFieldsService.getFieldsByFormId>
+>[number];
+
+function toFormResponse(form: FormRecord) {
+    return {
+        id: form.id,
+        title: form.title,
+        description: form.description,
+        createdBy: form.createdBy,
+        isProtected: form.isProtected,
+        published: form.published,
+        publishedBy: form.publishedBy,
+        publishedAt: form.publishedAt,
+        unpublishedAt: form.unpublishedAt,
+        deleted: form.deleted,
+        deletedBy: form.deletedBy,
+        deletedAt: form.deletedAt,
+        participantLimit: form.participantLimit,
+        participantLimitUnit: form.participantLimitUnit,
+        totalSubmissions: form.totalSubmissions,
+        unSubmittedSubmissions: form.unSubmittedSubmissions,
+        timeLimit: form.timeLimit,
+        timeLimitUnit: form.timeLimitUnit,
+        formLink: form.formLink,
+        createdAt: form.createdAt,
+        updatedAt: form.updatedAt,
+    };
+}
+
+function toFormFieldResponse(field: FormFieldRecord) {
+    return {
+        id: field.id,
+        label: field.label,
+        labelKey: field.labelKey,
+        description: field.description,
+        placeholder: field.placeholder,
+        isRequired: field.isRequired,
+        type: field.type,
+        options: field.options,
+        index: field.index,
+        createdBy: field.createdBy,
+        createdAt: field.createdAt,
+        updatedAt: field.updatedAt,
+    };
+}
 
 async function ensureFormOwner(formId: string, userId: string) {
     const form = await formService.getFormById({ id: formId });
@@ -42,7 +90,7 @@ export const formRouter = router({
                 ...input,
                 createdBy: ctx.user.id,
             });
-            return form;
+            return toFormResponse(form);
         }),
 
     getFormById: protectedProcedure
@@ -59,7 +107,7 @@ export const formRouter = router({
         .query(async ({ input, ctx }) => {
             await ensureFormOwner(input.id, ctx.user.id);
             const form = await formService.getFormById(input);
-            return form;
+            return toFormResponse(form);
         }),
 
     getAllFormsByUserId: protectedProcedure
@@ -77,7 +125,7 @@ export const formRouter = router({
             const forms = await formService.getAllFormsByUserId({
                 userId: ctx.user.id,
             });
-            return forms;
+            return forms.map((form) => toFormResponse(form));
         }),
 
     updateForm: protectedProcedure
@@ -96,7 +144,7 @@ export const formRouter = router({
                 ...input,
                 userId: ctx.user.id,
             });
-            return updatedForm;
+            return toFormResponse(updatedForm);
         }),
 
     deleteForm: protectedProcedure
@@ -109,13 +157,13 @@ export const formRouter = router({
             },
         })
         .input(formIdInputSchema)
-        .output(deletedOutputSchema)
+        .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
             const deletedForm = await formService.deleteForm({
                 ...input,
                 userId: ctx.user.id,
             });
-            return deletedForm;
+            return { id: deletedForm.id };
         }),
 
     publishForm: protectedProcedure
@@ -134,7 +182,7 @@ export const formRouter = router({
                 ...input,
                 userId: ctx.user.id,
             });
-            return publishedForm;
+            return toFormResponse(publishedForm);
         }),
 
     unpublishForm: protectedProcedure
@@ -153,7 +201,7 @@ export const formRouter = router({
                 ...input,
                 userId: ctx.user.id,
             });
-            return unpublishedForm;
+            return toFormResponse(unpublishedForm);
         }),
 
     getFormFields: protectedProcedure
@@ -172,7 +220,7 @@ export const formRouter = router({
             const formFields = await formFieldsService.getFieldsByFormId({
                 formId: input.id,
             });
-            return formFields;
+            return formFields.map((field) => toFormFieldResponse(field));
         }),
 
     createFormField: protectedProcedure
@@ -185,11 +233,11 @@ export const formRouter = router({
             },
         })
         .input(createFormFieldInputSchema)
-        .output(formFieldsOutputSchema.element)
+        .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
             const formField = await formFieldsService.createField(input);
-            return formField;
+            return { id: formField.id };
         }),
 
     updateFormField: protectedProcedure
@@ -202,11 +250,11 @@ export const formRouter = router({
             },
         })
         .input(updateFormFieldInputSchema)
-        .output(formFieldsOutputSchema.element)
+        .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
             const updatedFormField = await formFieldsService.updateField(input);
-            return updatedFormField;
+            return { id: updatedFormField.id };
         }),
 
     deleteFormField: protectedProcedure
@@ -219,10 +267,10 @@ export const formRouter = router({
             },
         })
         .input(formFieldIdInputSchema)
-        .output(deletedOutputSchema)
+        .output(idOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
             const deletedFormField = await formFieldsService.deleteField(input);
-            return deletedFormField;
+            return { id: deletedFormField.id };
         }),
 });
