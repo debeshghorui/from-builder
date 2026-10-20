@@ -41,6 +41,10 @@ export const refreshUserTokenOutputSchema = z.object({
     userId: z.string().uuid().describe("The ID of the refreshed user"),
 });
 
+export const signOutUserOutputSchema = z.object({
+    success: z.boolean(),
+});
+
 // * Get Logged In User Info Routes Input And Output Schemas
 
 // Get Logged In User Info Input Schema

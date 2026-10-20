@@ -18,6 +18,7 @@ export const usersTable = pgTable("users", {
 
     passwordHash: text("password_hash"),
     passwordSalt: text("password_salt"),
+    refreshTokenHash: text("refresh_token_hash"),
 
     profileImageUrl: text("profile_image_url"),
 

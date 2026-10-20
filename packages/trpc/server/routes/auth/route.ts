@@ -11,6 +11,7 @@ import {
     getLoggedInUserInfoOutputSchema,
     refreshUserTokenInputSchema,
     refreshUserTokenOutputSchema,
+    signOutUserOutputSchema,
 } from "./model";
 
 const TAGS = ["Authentication"];
@@ -130,6 +131,22 @@ export const authRouter = router({
             ctx.setRefreshTokenCookie(rotatedRefreshToken);
 
             return { userId: id };
+        }),
+    signOutUser: publicProcedure
+        .meta({
+            openapi: {
+                method: "POST",
+                path: getPath("/signOutUser"),
+                tags: TAGS,
+            },
+        })
+        .input(refreshUserTokenInputSchema)
+        .output(signOutUserOutputSchema)
+        .mutation(async ({ ctx }) => {
+            await userService.revokeRefreshToken(ctx.getRefreshTokenCookie());
+            ctx.clearAuthenticationCookie();
+            ctx.clearRefreshTokenCookie();
+            return { success: true };
         }),
     getLoggedInUserInfo: protectedProcedure
         .meta({

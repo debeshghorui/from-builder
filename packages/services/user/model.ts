@@ -6,9 +6,10 @@ export const CreateUserWithEmailAndPasswordInputSchema = z.object({
     lastName: z.string().min(1).max(80).describe("The last name of the user"),
     email: z
         .string()
+        .trim()
         .email()
         .max(255)
-        .transform((email) => email.toLowerCase())
+        .transform((email) => email.trim().toLowerCase())
         .describe("The email of the user"),
     password: z.string().min(8).max(255).describe("The password of the user"),
     profileImageUrl: z
@@ -32,7 +33,12 @@ export type UserTokenPayloadType = z.infer<typeof UserTokenPayloadSchema>;
 
 // Sign In User With Email And Password Input Schema
 export const signInUserWithEmailAndPasswordInputSchema = z.object({
-    email: z.string().email().describe("The email of the user"),
+    email: z
+        .string()
+        .trim()
+        .email()
+        .transform((email) => email.trim().toLowerCase())
+        .describe("The email of the user"),
     password: z.string().min(8).max(255).describe("The password of the user"),
 });
 

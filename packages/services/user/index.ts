@@ -1,5 +1,12 @@
 import * as jwt from "jsonwebtoken";
-import { randomBytes, createHmac } from "node:crypto";
+import {
+    randomBytes,
+    createHash,
+    createHmac,
+    scrypt,
+    timingSafeEqual,
+} from "node:crypto";
+import { promisify } from "node:util";
 import { logger } from "@repo/logger";
 
 import { db, eq } from "@repo/database";
@@ -20,6 +27,8 @@ import {
 import { env } from "../env";
 
 class UserService {
+    private readonly scryptAsync = promisify(scrypt);
+
     private async getUserByEmail(email: string) {
         const user = await db
             .select()
@@ -73,7 +82,19 @@ class UserService {
     }
 
     private async generateHashed(password: string, salt: string) {
-        return createHmac("sha256", salt).update(password).digest("hex");
+        const hash = (await this.scryptAsync(password, salt, 64)) as Buffer;
+        return hash.toString("hex");
+    }
+
+    private hashRefreshToken(token: string) {
+        return createHash("sha256").update(token).digest("hex");
+    }
+
+    private async saveRefreshToken(userId: string, refreshToken: string) {
+        await db
+            .update(usersTable)
+            .set({ refreshTokenHash: this.hashRefreshToken(refreshToken) })
+            .where(eq(usersTable.id, userId));
     }
 
     public async getUserInfoById(id: string) {
@@ -138,6 +159,7 @@ class UserService {
             id: userId,
             email,
         });
+        await this.saveRefreshToken(userId, refreshToken);
 
         return {
             id: userId,
@@ -165,18 +187,41 @@ class UserService {
             throw new Error(`Invalid authentication method`);
 
         // Check if password is correct
-        const hash = await this.generateHashed(
-            password,
-            existingUserWithEmail.passwordSalt,
-        );
-        if (hash !== existingUserWithEmail.passwordHash)
-            throw new Error("Invalid Email address or password");
-
+        const savedHash = existingUserWithEmail.passwordHash;
+        const salt = existingUserWithEmail.passwordSalt;
+        let hash: string;
+        if (/^[a-f0-9]{64}$/i.test(savedHash) && /^[a-f0-9]{32}$/i.test(salt)) {
+            // Upgrade passwords created by the previous SHA-256 HMAC scheme.
+            hash = createHmac("sha256", salt).update(password).digest("hex");
+            if (
+                !timingSafeEqual(
+                    Buffer.from(hash, "hex"),
+                    Buffer.from(savedHash, "hex"),
+                )
+            )
+                throw new Error("Invalid Email address or password");
+            const newSalt = randomBytes(16).toString("hex");
+            const newHash = await this.generateHashed(password, newSalt);
+            await db
+                .update(usersTable)
+                .set({ passwordHash: newHash, passwordSalt: newSalt })
+                .where(eq(usersTable.id, existingUserWithEmail.id));
+        } else {
+            hash = await this.generateHashed(password, salt);
+            const expected = Buffer.from(savedHash, "hex");
+            const actual = Buffer.from(hash, "hex");
+            if (
+                expected.length !== actual.length ||
+                !timingSafeEqual(actual, expected)
+            )
+                throw new Error("Invalid Email address or password");
+        }
         // Generate user token
         const { token, refreshToken } = await this.generateUserToken({
             id: existingUserWithEmail.id,
             email: existingUserWithEmail.email,
         });
+        await this.saveRefreshToken(existingUserWithEmail.id, refreshToken);
 
         return {
             id: existingUserWithEmail.id,
@@ -198,10 +243,37 @@ class UserService {
         const { id, email } = await this.verifyRefreshToken(refreshToken);
         const user = await this.getUserByEmail(email);
 
-        if (!user || user.id !== id) throw new Error("Invalid refresh token");
+        if (
+            !user ||
+            user.id !== id ||
+            !user.refreshTokenHash ||
+            this.hashRefreshToken(refreshToken) !== user.refreshTokenHash
+        ) {
+            throw new Error("Invalid refresh token");
+        }
 
         const tokens = await this.generateUserToken({ id, email });
+        await this.saveRefreshToken(id, tokens.refreshToken);
         return await RefreshUserTokenOutputSchema.parseAsync({ id, ...tokens });
+    }
+
+    public async revokeRefreshToken(refreshToken?: string) {
+        if (!refreshToken) return;
+        try {
+            const { id, email } = await this.verifyRefreshToken(refreshToken);
+            const user = await this.getUserByEmail(email);
+            if (
+                user?.id === id &&
+                user.refreshTokenHash === this.hashRefreshToken(refreshToken)
+            ) {
+                await db
+                    .update(usersTable)
+                    .set({ refreshTokenHash: null })
+                    .where(eq(usersTable.id, id));
+            }
+        } catch {
+            // Logout is idempotent, including for expired or invalid tokens.
+        }
     }
 }
 
