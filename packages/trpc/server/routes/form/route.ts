@@ -37,9 +37,13 @@ export const formRouter = router({
         })
         .input(createFormInputSchema)
         .output(formOutputSchema)
-        .mutation(async ({ input, ctx }) =>
-            formService.createForm({ ...input, createdBy: ctx.user.id }),
-        ),
+        .mutation(async ({ input, ctx }) => {
+            const form = await formService.createForm({
+                ...input,
+                createdBy: ctx.user.id,
+            });
+            return form;
+        }),
 
     getFormById: protectedProcedure
         .meta({
@@ -54,23 +58,27 @@ export const formRouter = router({
         .output(formOutputSchema)
         .query(async ({ input, ctx }) => {
             await ensureFormOwner(input.id, ctx.user.id);
-            return formService.getFormById(input);
+            const form = await formService.getFormById(input);
+            return form;
         }),
 
-    getFormsByUserId: protectedProcedure
+    getAllFormsByUserId: protectedProcedure
         .meta({
             openapi: {
                 method: "GET",
-                path: getPath("/getFormsByUserId"),
+                path: getPath("/getAllFormsByUserId"),
                 tags: TAGS,
                 protect: true,
             },
         })
         .input(noInputSchema)
         .output(formListOutputSchema)
-        .query(({ ctx }) =>
-            formService.getFormsByUserId({ userId: ctx.user.id }),
-        ),
+        .query(async ({ ctx }) => {
+            const forms = await formService.getAllFormsByUserId({
+                userId: ctx.user.id,
+            });
+            return forms;
+        }),
 
     updateForm: protectedProcedure
         .meta({
@@ -83,9 +91,13 @@ export const formRouter = router({
         })
         .input(updateFormInputSchema)
         .output(formOutputSchema)
-        .mutation(({ input, ctx }) =>
-            formService.updateForm({ ...input, userId: ctx.user.id }),
-        ),
+        .mutation(async ({ input, ctx }) => {
+            const updatedForm = await formService.updateForm({
+                ...input,
+                userId: ctx.user.id,
+            });
+            return updatedForm;
+        }),
 
     deleteForm: protectedProcedure
         .meta({
@@ -98,9 +110,13 @@ export const formRouter = router({
         })
         .input(formIdInputSchema)
         .output(deletedOutputSchema)
-        .mutation(({ input, ctx }) =>
-            formService.deleteForm({ ...input, userId: ctx.user.id }),
-        ),
+        .mutation(async ({ input, ctx }) => {
+            const deletedForm = await formService.deleteForm({
+                ...input,
+                userId: ctx.user.id,
+            });
+            return deletedForm;
+        }),
 
     publishForm: protectedProcedure
         .meta({
@@ -113,9 +129,13 @@ export const formRouter = router({
         })
         .input(formIdInputSchema)
         .output(formOutputSchema)
-        .mutation(({ input, ctx }) =>
-            formService.publishForm({ ...input, userId: ctx.user.id }),
-        ),
+        .mutation(async ({ input, ctx }) => {
+            const publishedForm = await formService.publishForm({
+                ...input,
+                userId: ctx.user.id,
+            });
+            return publishedForm;
+        }),
 
     unpublishForm: protectedProcedure
         .meta({
@@ -128,9 +148,13 @@ export const formRouter = router({
         })
         .input(formIdInputSchema)
         .output(formOutputSchema)
-        .mutation(({ input, ctx }) =>
-            formService.unpublishForm({ ...input, userId: ctx.user.id }),
-        ),
+        .mutation(async ({ input, ctx }) => {
+            const unpublishedForm = await formService.unpublishForm({
+                ...input,
+                userId: ctx.user.id,
+            });
+            return unpublishedForm;
+        }),
 
     getFormFields: protectedProcedure
         .meta({
@@ -145,7 +169,8 @@ export const formRouter = router({
         .output(formFieldsOutputSchema)
         .query(async ({ input, ctx }) => {
             await ensureFormOwner(input.id, ctx.user.id);
-            return formService.getFormFields(input);
+            const formFields = await formService.getFormFields(input);
+            return formFields;
         }),
 
     createFormField: protectedProcedure
@@ -161,7 +186,8 @@ export const formRouter = router({
         .output(formFieldsOutputSchema.element)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            return formService.createFormField(input);
+            const formField = await formService.createFormField(input);
+            return formField;
         }),
 
     updateFormField: protectedProcedure
@@ -177,7 +203,8 @@ export const formRouter = router({
         .output(formFieldsOutputSchema.element)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            return formService.updateFormField(input);
+            const updatedFormField = await formService.updateFormField(input);
+            return updatedFormField;
         }),
 
     deleteFormField: protectedProcedure
@@ -193,6 +220,7 @@ export const formRouter = router({
         .output(deletedOutputSchema)
         .mutation(async ({ input, ctx }) => {
             await ensureFormOwner(input.formId, ctx.user.id);
-            return formService.deleteFormField(input);
+            const deletedFormField = await formService.deleteFormField(input);
+            return deletedFormField;
         }),
 });

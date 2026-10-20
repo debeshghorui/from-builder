@@ -17,7 +17,7 @@ export const useCreateForm = () => {
         status,
     } = trpc.form.createForm.useMutation({
         onSuccess: () => {
-            utils.form.getFormsByUserId.invalidate();
+            utils.form.getAllFormsByUserId.invalidate();
         },
         onError: (mutationError) => {
             toast.error(mutationError.message || "Failed to create form");

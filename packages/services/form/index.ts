@@ -48,7 +48,7 @@ class FormService {
         return form;
     }
 
-    public async getFormsByUserId(payload: UserIdInputType) {
+    public async getAllFormsByUserId(payload: UserIdInputType) {
         const { userId } = await UserIdInputSchema.parseAsync(payload);
         return db
             .select()
