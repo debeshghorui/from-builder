@@ -1,18 +1,25 @@
 "use client";
 
 import { GalleryVerticalEnd } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { SignupForm } from "~/components/signup-form";
-import { useSignup } from "~/hooks/api/auth";
+import { TablerIllustration } from "~/components/tabler-illustration";
+import { useSignup, useUser } from "~/hooks/api/auth";
 
 export default function SignupPage() {
     const router = useRouter();
 
+    const { user } = useUser();
     const { createUserWithEmailAndPasswordAsync, isPending } = useSignup();
     const [message, setMessage] = useState("");
+
+    useEffect(() => {
+        if (user) router.replace("/dashboard");
+    }, [router, user]);
+
+    if (user) return null;
 
     async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -132,13 +139,14 @@ export default function SignupPage() {
                     </div>
                 </div>
             </div>
-            <div className="bg-muted relative hidden lg:block">
-                <Image
-                    src="/placeholder.svg"
-                    alt="Abstract sign-in illustration"
-                    fill
+            <div className="bg-muted/40 relative hidden items-center justify-center overflow-hidden p-10 lg:flex">
+                <div className="from-primary/10 absolute inset-0 bg-gradient-to-br via-transparent to-purple-500/10" />
+                <TablerIllustration
+                    name="welcome-on-board"
+                    alt="People welcoming a new team member"
                     sizes="(min-width: 1024px) 50vw, 100vw"
-                    className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+                    priority
+                    className="relative z-10 h-auto max-h-[80vh] w-full max-w-2xl object-contain"
                 />
             </div>
         </div>

@@ -18,6 +18,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
+import { TablerIllustration } from "~/components/tabler-illustration";
 
 type FormListItem = RouterOutputs["form"]["getAllFormsByUserId"][number];
 
@@ -142,6 +143,12 @@ export default function FormsPage() {
             ) : (
                 <section className="flex min-h-64 flex-1 items-center justify-center rounded-xl border border-dashed">
                     <div className="max-w-sm px-6 text-center">
+                        <TablerIllustration
+                            name="project"
+                            alt="A person organizing a project"
+                            sizes="192px"
+                            className="mx-auto mb-3 h-36 w-48 object-contain"
+                        />
                         <h2 className="font-medium">Start with a new form</h2>
                         <p className="text-muted-foreground mt-2 text-sm">
                             Create a form to start collecting responses.
