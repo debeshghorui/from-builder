@@ -28,6 +28,7 @@ export const formFieldsTable = pgTable(
         id: uuid("id").primaryKey().defaultRandom(),
 
         label: varchar("label", { length: 55 }).notNull(),
+        // Unique identifier for the field so that in the future we can edit the field without breaking the existing form responses
         labelKey: varchar("label_key", { length: 55 }).notNull(),
 
         description: text("description"),
