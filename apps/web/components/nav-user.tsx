@@ -117,13 +117,17 @@ export function NavUser({ user }: { user: User }) {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <IconUserCircle />
-                                Account
+                            <DropdownMenuItem asChild>
+                                <a href="/dashboard/account">
+                                    <IconUserCircle />
+                                    Account
+                                </a>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <IconCreditCard />
-                                Billing
+                            <DropdownMenuItem asChild>
+                                <a href="/dashboard/billing">
+                                    <IconCreditCard />
+                                    Billing
+                                </a>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <IconNotification />
