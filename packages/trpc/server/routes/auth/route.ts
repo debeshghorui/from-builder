@@ -92,9 +92,31 @@ export const authRouter = router({
             const refreshToken = ctx.getRefreshTokenCookie();
 
             if (!refreshToken) {
+                ctx.clearAuthenticationCookie();
+                ctx.clearRefreshTokenCookie();
+
                 throw new TRPCError({
                     code: "UNAUTHORIZED",
                     message: "Refresh token cookie is missing",
+                });
+            }
+
+            let refreshedUser: Awaited<
+                ReturnType<typeof userService.refreshUserToken>
+            >;
+
+            try {
+                refreshedUser = await userService.refreshUserToken({
+                    refreshToken,
+                });
+            } catch (error) {
+                ctx.clearAuthenticationCookie();
+                ctx.clearRefreshTokenCookie();
+
+                throw new TRPCError({
+                    code: "UNAUTHORIZED",
+                    message: "Refresh token is invalid or expired",
+                    cause: error,
                 });
             }
 
@@ -102,7 +124,7 @@ export const authRouter = router({
                 id,
                 token,
                 refreshToken: rotatedRefreshToken,
-            } = await userService.refreshUserToken({ refreshToken });
+            } = refreshedUser;
 
             ctx.setAuthenticationCookie(token);
             ctx.setRefreshTokenCookie(rotatedRefreshToken);
