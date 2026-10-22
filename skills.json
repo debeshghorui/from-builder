@@ -1,0 +1,125 @@
+{
+    "agents": ["cursor"],
+    "skills": {
+        "brainstorming": {
+            "repo": "https://github.com/obra/superpowers",
+            "description": "Refine a design before any code is written"
+        },
+        "chaiui": {
+            "repo": "https://ui.chaicode.com",
+            "description": "ChaiUI design system for shadcn"
+        },
+        "code-review": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Review a diff before it lands"
+        },
+        "code-review-and-quality": {
+            "repo": "https://github.com/addyosmani/agent-skills",
+            "description": "Multi-axis review of a diff or pull request"
+        },
+        "codebase-design": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Design how a codebase should be structured"
+        },
+        "design-taste-frontend": {
+            "repo": "https://github.com/leonxlnx/taste-skill",
+            "description": "Landing pages that do not look templated"
+        },
+        "diagnosing-bugs": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Find the cause of a bug before changing code"
+        },
+        "differential-review": {
+            "repo": "https://github.com/trailofbits/skills",
+            "description": "Security review of a diff, with blast radius"
+        },
+        "domain-modeling": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Model the domain before writing the schema"
+        },
+        "find-skills": {
+            "repo": "https://github.com/vercel-labs/skills",
+            "description": "Find and install other agent skills"
+        },
+        "frontend-design": {
+            "repo": "https://github.com/anthropics/skills",
+            "description": "Distinctive UI design instead of generic templates"
+        },
+        "frontend-ui-engineering": {
+            "repo": "https://github.com/addyosmani/agent-skills",
+            "description": "Accessible, production-quality interface code"
+        },
+        "grill-me": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Interview a plan until the decisions are solid"
+        },
+        "hallmark": {
+            "repo": "https://github.com/nutlope/hallmark",
+            "description": "Build UI that refuses to look AI-generated"
+        },
+        "handoff": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Hand the next session enough context to continue"
+        },
+        "impeccable": {
+            "repo": "https://github.com/pbakaus/impeccable",
+            "description": "Design, critique, and polish a frontend"
+        },
+        "improve-codebase-architecture": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Find and fix structural problems"
+        },
+        "performance-optimization": {
+            "repo": "https://github.com/addyosmani/agent-skills",
+            "description": "Speed up UI, queries, and backend paths"
+        },
+        "prototype": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Build a small prototype before committing"
+        },
+        "security-and-hardening": {
+            "repo": "https://github.com/addyosmani/agent-skills",
+            "description": "Harden input, auth, and dependencies"
+        },
+        "security-audit": {
+            "repo": "https://github.com/cloudflare/security-audit-skill",
+            "description": "Multi-phase security audit with verified findings"
+        },
+        "sharp-edges": {
+            "repo": "https://github.com/trailofbits/skills",
+            "description": "Spot error-prone APIs and dangerous defaults"
+        },
+        "systematic-debugging": {
+            "repo": "https://github.com/obra/superpowers",
+            "description": "Four-phase root-cause debugging"
+        },
+        "teach": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Explain a topic and check that it landed"
+        },
+        "triage": {
+            "repo": "https://github.com/mattpocock/skills",
+            "description": "Sort bugs and tasks by what to do next"
+        },
+        "vercel-composition-patterns": {
+            "repo": "https://github.com/vercel-labs/agent-skills",
+            "description": "React composition that stays flexible"
+        },
+        "vercel-react-best-practices": {
+            "repo": "https://github.com/vercel-labs/agent-skills",
+            "description": "React and Next.js performance practices"
+        },
+        "verification-before-completion": {
+            "repo": "https://github.com/obra/superpowers",
+            "description": "Prove a fix works before calling it done"
+        },
+        "web-design-guidelines": {
+            "repo": "https://github.com/vercel-labs/agent-skills",
+            "description": "Audit UI for accessibility, UX, and performance"
+        },
+        "writing-plans": {
+            "repo": "https://github.com/obra/superpowers",
+            "description": "Turn an approved design into an implementation plan"
+        }
+    }
+}
