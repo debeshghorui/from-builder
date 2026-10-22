@@ -1,11 +1,15 @@
 # ChaiUI registry items
 
-Install: `npx shadcn@latest add @chaiui/<name>` after adding `"registries": { "@chaiui": "https://ui.chaicode.com/r/{name}.json" }` to `components.json`. Or by URL: `npx shadcn@latest add https://ui.chaicode.com/r/<name>.json`.
+Install: `npx shadcn@latest add @chaiui/<name>` after adding
+`"registries": { "@chaiui": "https://ui.chaicode.com/r/{name}.json" }` to `components.json`.
+Or by URL: `npx shadcn@latest add https://ui.chaicode.com/r/<name>.json`.
 
-**Status:** every item below is `shipped`: live at https://ui.chaicode.com since 2026-10-03, so install it with the commands above. Install `@chaiui/chaiui` first in an existing app. Mark new items `shipped` once they are deployed.
+**Status:** every item below is `shipped`: live at https://ui.chaicode.com
+since 2026-10-03, so install it with the commands above. Install
+`@chaiui/chaiui` first in an existing app. Mark new items `shipped` once they
+are deployed.
 
 APIs of the built items:
-
 - `Button`: `variant` soft (default) | solid | outline | muted | ghost | danger, `size` sm | md | lg | icon, `asChild`, `iconRight` (solid defaults to ArrowUpRight; `null` drops it).
 - `Card`, `CardMedia`, `CardBody`, `CardTitle`, `CardText`, `CardFooter`.
 - `Chip tone` default | success | danger | special. `Badge variant` overlay | new | hot | rated (on images only).
@@ -40,7 +44,7 @@ APIs of the built items:
 - Templates: `PageShell` (children; edit `NAV_LINKS` and `FOOTER_SECTIONS` in the file), `LandingPage`, `ListingPage`, `EventsPage`. Render one from a route; replace the constants at the top of the file.
 
 | item | what | status |
-| --- | --- | --- |
+|---|---|---|
 | `chaiui` | the theme: tokens, fonts, highlight, card and button utilities | shipped |
 | `utils` | `cn()` | shipped |
 | `backdrop` | the hexagon glow background | shipped |
@@ -61,7 +65,7 @@ APIs of the built items:
 **Components** (`registry:block`). Reach for these before hand-rolling a page:
 
 | item | what | status |
-| --- | --- | --- |
+|---|---|---|
 | `navbar` | sticky transparent header, blur on scroll, `layout: menu \| inline` | shipped |
 | `hero` | one central element, badge, title, lead, solid + outline buttons | shipped |
 | `footer` | logo column, link columns, the faded orange hairline | shipped |
@@ -73,7 +77,7 @@ APIs of the built items:
 **Templates** (whole pages, `registry:block`, installed as components you render from a route):
 
 | item | what | status |
-| --- | --- | --- |
+|---|---|---|
 | `page-shell` | background, navbar, the max-w-6xl column and footer; links in one place | shipped |
 | `landing-page`, `listing-page`, `events-page` | full pages built from the blocks | shipped |
 | `auth-shell`, `sign-in-page`, `sign-up-page`, `forgot-password-page` | auth pages; wire `onSubmit` and `onOAuth` to your auth provider | shipped |
