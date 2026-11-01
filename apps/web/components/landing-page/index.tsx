@@ -1,672 +1,604 @@
 "use client";
 
 import Link from "next/link";
-import { useTheme } from "next-themes";
+import { motion, useReducedMotion } from "motion/react";
 import {
-    ArrowRight,
-    ChevronRight,
-    Zap,
-    Shield,
-    Sparkles,
-    BarChart3,
-    Users,
-    Star,
-    CheckCircle2,
-    MousePointer2,
-    Layers3,
+    Activity,
     ArrowUpRight,
+    BarChart3,
+    Check,
+    ClipboardList,
+    FileText,
+    Layers3,
+    MessageSquareText,
+    Sparkles,
+    WandSparkles,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import Image from "next/image";
 
+import { Backdrop } from "~/components/backdrop";
+import { Highlight } from "~/components/ui/highlight";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
 import { Footer } from "./footer";
 import { Navbar } from "./navbar";
 
-const features = [
+const workflow = [
     {
-        icon: Zap,
-        title: "Lightning Fast",
-        description:
-            "Build and deploy forms in seconds with our optimized infrastructure.",
-        gradient: "from-blue-500 to-cyan-500",
-        illustration: "computer-fix",
+        icon: ClipboardList,
+        title: "Create thoughtful forms",
+        copy: "Start with a blank page or a ready-to-edit template.",
     },
     {
-        icon: Shield,
-        title: "Enterprise Security",
-        description:
-            "Bank-grade encryption and compliance with SOC 2, GDPR, and HIPAA.",
-        gradient: "from-purple-500 to-pink-500",
-        illustration: "shield",
+        icon: Activity,
+        title: "Spot the signal",
+        copy: "See response patterns and completion trends at a glance.",
+    },
+    {
+        icon: Layers3,
+        title: "Move from insight to action",
+        copy: "Share what you learn with the people who can make a difference.",
+    },
+];
+
+const features = [
+    {
+        icon: FileText,
+        title: "Built for real work",
+        copy: "Start with a clear structure, then make it yours with flexible question types and thoughtful design controls.",
     },
     {
         icon: BarChart3,
-        title: "Real-time Analytics",
-        description:
-            "Track responses, analyze trends, and get insights instantly.",
-        gradient: "from-orange-500 to-red-500",
-        illustration: "chart-circle",
+        title: "Answers become insight",
+        copy: "Follow response patterns, see what is resonating, and share a useful summary with your team.",
     },
     {
-        icon: Users,
-        title: "Team Collaboration",
-        description:
-            "Work together seamlessly with real-time editing and comments.",
-        gradient: "from-green-500 to-emerald-500",
-        illustration: "conversation",
+        icon: WandSparkles,
+        title: "Make every form feel considered",
+        copy: "Match your brand, keep the experience focused, and meet people wherever they are.",
     },
     {
-        icon: Sparkles,
-        title: "AI-Powered",
-        description:
-            "Smart suggestions and auto-completion powered by advanced AI.",
-        gradient: "from-violet-500 to-purple-500",
-        illustration: "ai",
-    },
-    {
-        icon: CheckCircle2,
-        title: "100% Reliable",
-        description:
-            "99.99% uptime guarantee with 24/7 support and monitoring.",
-        gradient: "from-yellow-500 to-orange-500",
-        illustration: "icons",
+        icon: MessageSquareText,
+        title: "Share progress, not busywork",
+        copy: "Bring your team into the process with shared workspaces and clear, simple reporting.",
     },
 ];
 
-const stats = [
-    { value: "10M+", label: "Forms Created" },
-    { value: "500K+", label: "Active Users" },
-    { value: "99.99%", label: "Uptime" },
-    { value: "4.9/5", label: "User Rating" },
-];
-
-const testimonials = [
-    {
-        name: "Sarah Chen",
-        role: "Product Lead, TechCorp",
-        content:
-            "From Builder transformed how we collect user feedback. The analytics alone saved us weeks of work.",
-        avatar: "girl-phone",
-    },
-    {
-        name: "Marcus Johnson",
-        role: "CEO, StartupXYZ",
-        content:
-            "The most intuitive form builder I've ever used. We onboarded our entire team in under an hour.",
-        avatar: "boy-and-laptop",
-    },
-    {
-        name: "Emily Rodriguez",
-        role: "UX Designer, DesignCo",
-        content:
-            "Beautiful forms that match our brand perfectly. The customization options are incredible.",
-        avatar: "boy-girl",
-    },
-];
-
-const pricing = [
+const plans = [
     {
         name: "Starter",
-        price: "$0",
-        description: "Perfect for individuals",
+        price: "Free",
+        desc: "For getting your first form out there",
         features: [
-            "3 forms",
-            "100 responses/month",
-            "Basic analytics",
-            "Email support",
+            "3 active forms",
+            "100 responses / month",
+            "Essential insights",
         ],
-        popular: false,
     },
     {
         name: "Pro",
         price: "$29",
-        description: "For growing teams",
+        desc: "For teams learning as they grow",
         features: [
             "Unlimited forms",
-            "10,000 responses/month",
+            "10,000 responses / month",
             "Advanced analytics",
-            "Priority support",
-            "Custom branding",
+            "Team collaboration",
         ],
-        popular: true,
     },
     {
         name: "Enterprise",
-        price: "Custom",
-        description: "For large organizations",
+        price: "Let’s talk",
+        desc: "For organization-wide feedback",
         features: [
             "Everything in Pro",
-            "Unlimited responses",
-            "SSO & SAML",
+            "Custom security options",
             "Dedicated support",
-            "SLA guarantee",
+            "Flexible response limits",
         ],
-        popular: false,
     },
 ];
 
-function FloatingElement({ delay, rotate }: { delay: number; rotate: number }) {
-    return (
-        <motion.div
-            animate={{
-                y: [0, -20, 0],
-                rotate: [0, rotate, 0],
-            }}
-            transition={{
-                duration: 6,
-                repeat: Infinity,
-                delay,
-                ease: "easeInOut",
-            }}
-            className="absolute"
-        >
-            <div className="from-primary h-2 w-2 rounded-full bg-gradient-to-r to-purple-500" />
-        </motion.div>
-    );
-}
+const cardClass =
+    "card-chai transition-[border-color,opacity] duration-300 sm:opacity-90 sm:hover:opacity-100";
 
-function FeatureCard({
-    feature,
-    index,
+function Reveal({
+    children,
+    className,
 }: {
-    feature: (typeof features)[0];
-    index: number;
+    children: React.ReactNode;
+    className?: string;
 }) {
-    const { theme } = useTheme();
-    const illustrationPath = `/tabler-illustrations/${theme === "dark" ? "dark" : "light"}/${feature.illustration}.png`;
-
+    const reduceMotion = useReducedMotion();
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1 }}
+            className={className}
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
         >
-            <Card className="group border-border/50 bg-card/50 hover:border-primary/50 hover:shadow-primary/10 relative overflow-hidden backdrop-blur-sm transition-all hover:scale-105 hover:shadow-2xl">
-                <div
-                    className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 transition-opacity group-hover:opacity-5`}
-                />
-                <div className="relative p-6">
-                    <div className="mb-4 h-32 w-full">
-                        <Image
-                            src={illustrationPath}
-                            alt={feature.title}
-                            width={200}
-                            height={200}
-                            className="h-full w-full object-contain"
-                        />
-                    </div>
-                    <h3 className="mb-2 text-xl font-semibold">
-                        {feature.title}
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                        {feature.description}
-                    </p>
-                </div>
-            </Card>
-        </motion.div>
-    );
-}
-
-function StatCard({ stat, index }: { stat: (typeof stats)[0]; index: number }) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1 }}
-            className="text-center"
-        >
-            <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 + 0.2 }}
-                className="from-foreground to-muted-foreground bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl"
-            >
-                {stat.value}
-            </motion.div>
-            <p className="text-muted-foreground mt-2 text-sm">{stat.label}</p>
-        </motion.div>
-    );
-}
-
-function TestimonialCard({
-    testimonial,
-    index,
-}: {
-    testimonial: (typeof testimonials)[0];
-    index: number;
-}) {
-    const { theme } = useTheme();
-    const illustrationPath = `/tabler-illustrations/${theme === "dark" ? "dark" : "light"}/${testimonial.avatar}.png`;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1 }}
-        >
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                <div className="p-6">
-                    <div className="mb-4 h-32 w-full">
-                        <Image
-                            src={illustrationPath}
-                            alt={testimonial.name}
-                            width={200}
-                            height={200}
-                            className="h-full w-full object-contain"
-                        />
-                    </div>
-                    <div className="mb-4 flex gap-1">
-                        {[...Array(5)].map((_, i) => (
-                            <Star
-                                key={i}
-                                className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                            />
-                        ))}
-                    </div>
-                    <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
-                        "{testimonial.content}"
-                    </p>
-                    <div>
-                        <p className="text-sm font-semibold">
-                            {testimonial.name}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                            {testimonial.role}
-                        </p>
-                    </div>
-                </div>
-            </Card>
-        </motion.div>
-    );
-}
-
-function PricingCard({
-    plan,
-    index,
-}: {
-    plan: (typeof pricing)[0];
-    index: number;
-}) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1 }}
-        >
-            <Card
-                className={`border-border/50 bg-card/50 relative overflow-hidden backdrop-blur-sm transition-all hover:scale-105 hover:shadow-2xl ${
-                    plan.popular
-                        ? "border-primary/50 shadow-primary/10 shadow-xl"
-                        : ""
-                }`}
-            >
-                {plan.popular && (
-                    <div className="from-primary absolute top-0 right-0 rounded-bl-xl bg-gradient-to-r to-purple-500 px-3 py-1 text-xs font-semibold text-white">
-                        Popular
-                    </div>
-                )}
-                <div className="p-6">
-                    <h3 className="text-xl font-semibold">{plan.name}</h3>
-                    <p className="text-muted-foreground mb-4 text-sm">
-                        {plan.description}
-                    </p>
-                    <div className="mb-6">
-                        <span className="text-4xl font-bold">{plan.price}</span>
-                        {plan.price !== "Custom" && (
-                            <span className="text-muted-foreground">
-                                /month
-                            </span>
-                        )}
-                    </div>
-                    <ul className="mb-6 space-y-3">
-                        {plan.features.map((feature, i) => (
-                            <li
-                                key={i}
-                                className="flex items-center gap-2 text-sm"
-                            >
-                                <CheckCircle2 className="text-primary h-4 w-4" />
-                                {feature}
-                            </li>
-                        ))}
-                    </ul>
-                    <Button
-                        className={`w-full ${plan.popular ? "from-primary hover:from-primary/90 bg-gradient-to-r to-purple-500 hover:to-purple-500/90" : ""}`}
-                        variant={plan.popular ? "default" : "outline"}
-                    >
-                        Get Started <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
-                </div>
-            </Card>
+            {children}
         </motion.div>
     );
 }
 
 export function LandingPage() {
-    const { theme } = useTheme();
-    const heroIllustration = `/tabler-illustrations/${theme === "dark" ? "dark" : "light"}/welcome-on-board.png`;
-
     return (
-        <main className="bg-background text-foreground min-h-screen overflow-x-clip">
+        <main className="bg-background text-foreground selection:bg-accent selection:text-accent-foreground relative isolate min-h-screen overflow-x-clip">
+            <Backdrop />
             <Navbar />
 
-            {/* Hero Section */}
-            <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
-                {/* Animated Background Gradients */}
-                <div className="absolute inset-0">
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.2, 1],
-                            rotate: [0, 90, 0],
-                        }}
-                        transition={{
-                            duration: 20,
-                            repeat: Infinity,
-                            ease: "linear",
-                        }}
-                        className="from-primary/5 absolute -top-[50%] -left-[50%] h-[200%] w-[200%] bg-gradient-to-br via-transparent to-purple-500/5"
-                    />
-                    <motion.div
-                        animate={{
-                            scale: [1.2, 1, 1.2],
-                            rotate: [90, 0, 90],
-                        }}
-                        transition={{
-                            duration: 25,
-                            repeat: Infinity,
-                            ease: "linear",
-                        }}
-                        className="absolute -top-[50%] -right-[50%] h-[200%] w-[200%] bg-gradient-to-bl from-cyan-500/5 via-transparent to-blue-500/5"
-                    />
-                </div>
-
-                {/* Floating Particles */}
-                {[...Array(20)].map((_, i) => (
-                    <FloatingElement
-                        key={i}
-                        delay={i * 0.2}
-                        rotate={Math.random() * 360}
-                    />
-                ))}
-
-                <div className="relative z-10 mx-auto max-w-7xl px-5 text-center sm:px-8 lg:px-12">
-                    <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:text-left">
-                        <motion.div
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.8 }}
+            <section className="border-border/60 border-b px-6 pt-20 pb-20 sm:px-12 sm:pt-24 sm:pb-28">
+                <div className="mx-auto max-w-6xl text-center">
+                    <p className="border-card-edge bg-card-fill text-muted-foreground mx-auto mb-6 w-fit rounded-full border px-4 py-2 text-sm">
+                        Thoughtful forms for curious teams
+                    </p>
+                    <h1 className="mx-auto max-w-5xl text-[42px] leading-tight font-semibold tracking-tight md:text-6xl lg:text-7xl">
+                        Make every response count. Build forms that move you
+                        forward.
+                    </h1>
+                    <p className="mx-auto mt-6 max-w-3xl text-base text-neutral-600 md:text-xl dark:text-neutral-400">
+                        From first question to final insight, From Builder gives
+                        your team a simple place to create thoughtful forms and
+                        turn the answers into{" "}
+                        <Highlight>clear next steps</Highlight>.
+                    </p>
+                    <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                        <Button asChild variant="solid" size="lg">
+                            <Link href="/signup">Build your first form</Link>
+                        </Button>
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="lg"
+                            iconRight={<ArrowUpRight aria-hidden="true" />}
                         >
-                            <Badge className="border-primary/50 bg-primary/10 text-primary mb-6">
-                                <Sparkles className="mr-2 h-3 w-3" />
-                                Award-Winning Design
-                            </Badge>
+                            <a href="#product">Explore the product</a>
+                        </Button>
+                    </div>
+                    <div className="text-muted-foreground mt-7 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+                        {[
+                            "No credit card required",
+                            "Free to get started",
+                            "Ready in minutes",
+                        ].map((item) => (
+                            <span
+                                key={item}
+                                className="inline-flex items-center gap-2"
+                            >
+                                <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
+                                {item}
+                            </span>
+                        ))}
+                    </div>
 
-                            <h1 className="text-[clamp(3rem,6vw,6rem)] leading-[0.9] font-bold tracking-tight">
-                                Make forms that
-                                <span className="from-primary bg-gradient-to-r via-purple-500 to-cyan-500 bg-clip-text text-transparent">
-                                    {" "}
-                                    inspire.
+                    <div
+                        className={`mx-auto mt-16 max-w-5xl overflow-hidden p-4 text-left sm:p-7 ${cardClass}`}
+                    >
+                        <div className="border-border/70 flex flex-wrap items-center justify-between gap-3 border-b pb-4 text-sm">
+                            <div className="flex items-center gap-2 font-medium">
+                                <span className="border-card-edge text-muted-foreground grid size-8 place-items-center rounded-md border">
+                                    <Layers3 className="size-4" />
                                 </span>
-                            </h1>
-
-                            <p className="text-muted-foreground mt-6 text-lg sm:text-xl">
-                                Create beautiful, responsive forms in minutes.
-                                No coding required. Just drag, drop, and delight
-                                your users.
-                            </p>
-
-                            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
-                                <Button
-                                    asChild
-                                    size="lg"
-                                    className="from-primary shadow-primary/25 hover:shadow-primary/50 h-14 gap-2 bg-gradient-to-r to-purple-500 px-8 text-lg shadow-xl transition-all"
-                                >
-                                    <Link href="/signup">
-                                        Start Free{" "}
-                                        <ArrowRight className="h-5 w-5" />
-                                    </Link>
-                                </Button>
-                                <Button
-                                    asChild
-                                    size="lg"
-                                    variant="outline"
-                                    className="border-border/50 h-14 gap-2 px-8 text-lg backdrop-blur-sm"
-                                >
-                                    <a href="#features">
-                                        See Features{" "}
-                                        <MousePointer2 className="h-5 w-5" />
-                                    </a>
-                                </Button>
+                                From Builder{" "}
+                                <span className="text-muted-foreground">
+                                    / Workspace overview
+                                </span>
                             </div>
-
-                            <div className="text-muted-foreground mt-12 flex items-center justify-center gap-8 text-sm lg:justify-start">
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="text-primary h-4 w-4" />
-                                    No credit card required
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="text-primary h-4 w-4" />
-                                    Free forever plan
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="text-primary h-4 w-4" />
-                                    Cancel anytime
-                                </div>
+                            <div className="text-muted-foreground flex gap-5">
+                                <span>Responses</span>
+                                <span>Insights</span>
+                                <span className="hidden sm:inline">
+                                    Automations
+                                </span>
                             </div>
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0, x: 50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                            className="relative"
-                        >
-                            <motion.div
-                                animate={{
-                                    y: [0, -20, 0],
-                                }}
-                                transition={{
-                                    duration: 4,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                }}
-                                className="relative h-[400px] w-full"
-                            >
-                                <Image
-                                    src={heroIllustration}
-                                    alt="Welcome illustration"
-                                    width={500}
-                                    height={500}
-                                    className="h-full w-full object-contain drop-shadow-2xl"
-                                />
-                            </motion.div>
-                        </motion.div>
-                    </div>
-                </div>
-
-                {/* Scroll Indicator */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1, y: [0, 10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                    className="absolute bottom-8 left-1/2 -translate-x-1/2"
-                >
-                    <ChevronRight className="text-muted-foreground h-6 w-6 rotate-90" />
-                </motion.div>
-            </section>
-
-            {/* Stats Section */}
-            <section className="border-border/50 bg-muted/30 border-y backdrop-blur-sm">
-                <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-12">
-                    <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-                        {stats.map((stat, index) => (
-                            <StatCard key={index} stat={stat} index={index} />
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Features Section */}
-            <section id="features" className="py-24">
-                <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16 text-center"
-                    >
-                        <Badge className="border-primary/50 bg-primary/10 text-primary mb-4">
-                            Features
-                        </Badge>
-                        <h2 className="text-4xl font-bold sm:text-5xl">
-                            Everything you need to{" "}
-                            <span className="from-primary bg-gradient-to-r to-purple-500 bg-clip-text text-transparent">
-                                succeed
-                            </span>
-                        </h2>
-                        <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-                            Powerful features designed to help you create,
-                            manage, and analyze forms with ease.
-                        </p>
-                    </motion.div>
-
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {features.map((feature, index) => (
-                            <FeatureCard
-                                key={index}
-                                feature={feature}
-                                index={index}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Testimonials Section */}
-            <section
-                id="testimonials"
-                className="border-border/50 bg-muted/30 border-y py-24 backdrop-blur-sm"
-            >
-                <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16 text-center"
-                    >
-                        <Badge className="border-primary/50 bg-primary/10 text-primary mb-4">
-                            Testimonials
-                        </Badge>
-                        <h2 className="text-4xl font-bold sm:text-5xl">
-                            Loved by{" "}
-                            <span className="from-primary bg-gradient-to-r to-purple-500 bg-clip-text text-transparent">
-                                thousands
-                            </span>
-                        </h2>
-                        <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-                            See what our customers have to say about their
-                            experience with From Builder.
-                        </p>
-                    </motion.div>
-
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {testimonials.map((testimonial, index) => (
-                            <TestimonialCard
-                                key={index}
-                                testimonial={testimonial}
-                                index={index}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Pricing Section */}
-            <section id="pricing" className="py-24">
-                <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16 text-center"
-                    >
-                        <Badge className="border-primary/50 bg-primary/10 text-primary mb-4">
-                            Pricing
-                        </Badge>
-                        <h2 className="text-4xl font-bold sm:text-5xl">
-                            Simple,{" "}
-                            <span className="from-primary bg-gradient-to-r to-purple-500 bg-clip-text text-transparent">
-                                transparent
-                            </span>{" "}
-                            pricing
-                        </h2>
-                        <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-                            Choose the plan that's right for you. All plans
-                            include a 14-day free trial.
-                        </p>
-                    </motion.div>
-
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {pricing.map((plan, index) => (
-                            <PricingCard
-                                key={index}
-                                plan={plan}
-                                index={index}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA Section */}
-            <section className="border-border/50 bg-muted/30 border-y py-24 backdrop-blur-sm">
-                <div className="mx-auto max-w-4xl px-5 text-center sm:px-8 lg:px-12">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                    >
-                        <h2 className="text-4xl font-bold sm:text-5xl">
-                            Ready to get{" "}
-                            <span className="from-primary bg-gradient-to-r to-purple-500 bg-clip-text text-transparent">
-                                started
-                            </span>
-                            ?
-                        </h2>
-                        <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-                            Join thousands of teams already using From Builder
-                            to create amazing forms.
-                        </p>
-                        <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-                            <Button
-                                asChild
-                                size="lg"
-                                className="from-primary shadow-primary/25 hover:shadow-primary/50 h-14 gap-2 bg-gradient-to-r to-purple-500 px-8 text-lg shadow-xl transition-all"
-                            >
-                                <Link href="/signup">
-                                    Start Free Trial{" "}
-                                    <ArrowRight className="h-5 w-5" />
-                                </Link>
-                            </Button>
-                            <Button
-                                asChild
-                                size="lg"
-                                variant="outline"
-                                className="border-border/50 h-14 gap-2 px-8 text-lg backdrop-blur-sm"
-                            >
-                                <a href="#pricing">
-                                    View Pricing <Layers3 className="h-5 w-5" />
-                                </a>
-                            </Button>
                         </div>
-                    </motion.div>
+                        <div className="grid gap-4 pt-5 md:grid-cols-[1.5fr_1fr]">
+                            <div className="border-card-edge bg-background/60 rounded-lg border p-4 sm:p-6">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="font-medium">
+                                            Response activity
+                                        </p>
+                                        <p className="text-muted-foreground mt-1 text-sm">
+                                            All forms · past 30 days
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-montserrat text-2xl font-semibold">
+                                            12,486
+                                        </p>
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                            ↗ 18.6% vs last month
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="border-border/70 mt-8 flex h-32 items-end gap-1 border-b border-l px-2 sm:h-40">
+                                    {[
+                                        32, 55, 42, 74, 52, 89, 63, 76, 48, 94,
+                                        68, 82, 58, 100, 72, 88, 61, 78, 54, 91,
+                                    ].map((height, index) => (
+                                        <span
+                                            key={index}
+                                            className="flex-1 rounded-t-sm bg-neutral-300/70 dark:bg-neutral-600/70"
+                                            style={{ height: `${height}%` }}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="text-muted-foreground mt-2 flex justify-between text-xs">
+                                    <span>Sep 01</span>
+                                    <span>Sep 08</span>
+                                    <span>Sep 15</span>
+                                    <span>Sep 22</span>
+                                    <span>Sep 30</span>
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-rows-2">
+                                <div className="border-card-edge bg-background/60 rounded-lg border p-4">
+                                    <p className="text-muted-foreground text-sm">
+                                        Completion rate
+                                    </p>
+                                    <div className="mt-3 flex items-end justify-between">
+                                        <p className="font-montserrat text-3xl font-semibold">
+                                            84.2%
+                                        </p>
+                                        <div className="flex h-10 items-end gap-1">
+                                            {[
+                                                38, 55, 45, 68, 58, 78, 66, 94,
+                                                72, 100,
+                                            ].map((h, i) => (
+                                                <span
+                                                    key={i}
+                                                    className="w-2 rounded-t-sm bg-neutral-300 dark:bg-neutral-600"
+                                                    style={{ height: `${h}%` }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+                                        ↗ 6.4% this month
+                                    </p>
+                                </div>
+                                <div className="border-card-edge bg-background/60 flex items-center gap-3 rounded-lg border p-4">
+                                    <span className="border-card-edge text-muted-foreground grid size-10 place-items-center rounded-md border">
+                                        <MessageSquareText className="size-4" />
+                                    </span>
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            Top performing form
+                                        </p>
+                                        <p className="text-muted-foreground mt-1 text-xs">
+                                            Customer pulse · 2,841 responses
+                                        </p>
+                                    </div>
+                                    <ArrowUpRight className="text-muted-foreground ml-auto size-4" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-muted-foreground mt-10 text-sm">
+                        Forms · Feedback · Research · Signups · Customer
+                        insights
+                    </p>
+                </div>
+            </section>
+
+            <section id="product" className="px-6 py-20 sm:px-12 sm:py-28">
+                <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+                    <div>
+                        <p className="text-muted-foreground mb-4 text-sm font-medium">
+                            From noise to knowledge
+                        </p>
+                        <h2 className="text-2xl leading-tight font-medium sm:text-[30px]">
+                            Good questions make better decisions.
+                        </h2>
+                        <p className="text-muted-foreground mt-5 max-w-md text-base leading-7">
+                            Bring your questions, responses, and next steps
+                            together. Spend less time sorting through
+                            spreadsheets and more time understanding what people
+                            need.
+                        </p>
+                        <div className="mt-8 space-y-5">
+                            {workflow.map(({ icon: Icon, title, copy }) => (
+                                <div key={title} className="flex gap-3">
+                                    <span className="border-card-edge text-muted-foreground mt-0.5 grid size-9 shrink-0 place-items-center rounded-md border">
+                                        <Icon className="size-4" />
+                                    </span>
+                                    <div>
+                                        <h3 className="font-montserrat text-sm font-semibold">
+                                            {title}
+                                        </h3>
+                                        <p className="text-muted-foreground mt-1 text-sm">
+                                            {copy}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className={`p-5 sm:p-8 ${cardClass}`}>
+                        <div className="border-border/70 flex items-center justify-between border-b pb-4">
+                            <div>
+                                <p className="font-medium">Q3 customer pulse</p>
+                                <p className="text-muted-foreground mt-1 text-sm">
+                                    Response journey
+                                </p>
+                            </div>
+                            <span className="border-border text-muted-foreground rounded-md border px-2 py-1 text-xs">
+                                In progress
+                            </span>
+                        </div>
+                        <div className="mx-auto my-6 max-w-md space-y-3">
+                            {[
+                                {
+                                    title: "Customer pulse",
+                                    sub: "2,841 responses",
+                                    progress: "100%",
+                                },
+                                {
+                                    title: "Themes discovered",
+                                    sub: "8 emerging patterns",
+                                    progress: "76%",
+                                },
+                                {
+                                    title: "Share the story",
+                                    sub: "Team report · 4 insights",
+                                    progress: "48%",
+                                },
+                            ].map((item, i) => (
+                                <div
+                                    key={item.title}
+                                    className="border-card-edge bg-background/60 flex items-center gap-3 rounded-lg border p-4"
+                                >
+                                    <span className="text-muted-foreground text-xs">
+                                        0{i + 1}
+                                    </span>
+                                    <span className="border-card-edge text-muted-foreground grid size-9 place-items-center rounded-md border">
+                                        {i === 0 ? (
+                                            <MessageSquareText className="size-4" />
+                                        ) : i === 1 ? (
+                                            <Sparkles className="size-4" />
+                                        ) : (
+                                            <ArrowUpRight className="size-4" />
+                                        )}
+                                    </span>
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            {item.title}
+                                        </p>
+                                        <p className="text-muted-foreground mt-1 text-xs">
+                                            {item.sub}
+                                        </p>
+                                    </div>
+                                    <span className="text-muted-foreground ml-auto text-xs">
+                                        {item.progress}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="border-border/70 text-muted-foreground border-t pt-4 text-center text-sm">
+                            A simple path from question to meaningful change
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section className="px-6 py-16 sm:px-12 sm:py-20">
+                <Reveal>
+                    <figure
+                        className={`mx-auto max-w-4xl p-8 text-center sm:p-12 ${cardClass}`}
+                    >
+                        <blockquote className="text-xl leading-relaxed font-medium sm:text-3xl">
+                            “The best forms don’t just collect answers. They
+                            make it easier to understand people and decide what
+                            to do next.”
+                        </blockquote>
+                        <figcaption className="text-muted-foreground mt-6 text-sm">
+                            <span className="text-foreground font-medium">
+                                Built for curious teams
+                            </span>{" "}
+                            · Feedback worth acting on
+                        </figcaption>
+                    </figure>
+                </Reveal>
+            </section>
+
+            <section id="features" className="px-6 py-20 sm:px-12 sm:py-28">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mb-10 max-w-3xl">
+                        <p className="text-muted-foreground mb-4 text-sm font-medium">
+                            One workspace, many possibilities
+                        </p>
+                        <h2 className="text-2xl font-medium sm:text-[30px]">
+                            The single source of truth for every response.
+                        </h2>
+                        <p className="text-muted-foreground mt-3 text-base">
+                            Create, share, and learn from forms in one connected
+                            space, with <Highlight>useful context</Highlight>{" "}
+                            always close at hand.
+                        </p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {features.map(({ icon: Icon, title, copy }) => (
+                            <Reveal key={title}>
+                                <article
+                                    className={`h-full p-6 sm:p-8 ${cardClass}`}
+                                >
+                                    <span className="border-card-edge text-muted-foreground mb-5 grid size-10 place-items-center rounded-md border">
+                                        <Icon className="size-5" />
+                                    </span>
+                                    <h3 className="font-montserrat text-lg font-semibold">
+                                        {title}
+                                    </h3>
+                                    <p className="text-muted-foreground mt-3 text-sm leading-6">
+                                        {copy}
+                                    </p>
+                                    <div className="border-card-edge bg-background/60 text-muted-foreground mt-7 rounded-lg border p-4 text-sm">
+                                        {title === "Built for real work"
+                                            ? "What would make your day easier?"
+                                            : title === "Answers become insight"
+                                              ? "Satisfaction trend · Trending up 12%"
+                                              : title ===
+                                                  "Make every form feel considered"
+                                                ? "Your brand, your way."
+                                                : "Better work, together."}
+                                    </div>
+                                </article>
+                            </Reveal>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className="border-border/60 border-y px-6 py-16 sm:px-12 sm:py-20">
+                <div className="mx-auto grid max-w-6xl gap-8 sm:grid-cols-[0.65fr_1fr] sm:items-center">
+                    <div className={`p-7 ${cardClass}`}>
+                        <p className="text-muted-foreground text-sm">
+                            Less busywork, more momentum
+                        </p>
+                        <p className="font-montserrat mt-3 text-5xl font-semibold tracking-tight">
+                            2.3×
+                        </p>
+                        <p className="text-muted-foreground mt-2 text-sm">
+                            More time for the work that moves your team forward.
+                        </p>
+                        <div className="mt-6 flex h-12 items-end gap-1">
+                            {[
+                                20, 28, 25, 39, 34, 42, 47, 43, 58, 52, 65, 61,
+                                78, 74, 88, 100,
+                            ].map((n, i) => (
+                                <span
+                                    key={i}
+                                    className="flex-1 rounded-t-sm bg-neutral-300/70 dark:bg-neutral-600/70"
+                                    style={{ height: `${n}%` }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-muted-foreground mb-4 text-sm font-medium">
+                            More clarity, less busywork
+                        </p>
+                        <h2 className="text-2xl leading-tight font-medium sm:text-[30px]">
+                            Save time. Reduce the noise. Make your next move
+                            with confidence.
+                        </h2>
+                        <p className="text-muted-foreground mt-4 text-base leading-7">
+                            Spend less time chasing responses and wrangling
+                            data. From Builder helps make the useful things
+                            easier to see, so your team can focus on what comes
+                            next.
+                        </p>
+                        <a
+                            href="#pricing"
+                            className="text-foreground hover:text-brand mt-6 inline-flex items-center gap-2 text-sm transition-colors duration-200"
+                        >
+                            Find the right plan{" "}
+                            <ArrowUpRight className="size-4" />
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section id="testimonials" className="px-6 py-20 sm:px-12 sm:py-28">
+                <Reveal>
+                    <div
+                        className={`mx-auto max-w-4xl p-8 text-center sm:p-12 ${cardClass}`}
+                    >
+                        <p className="text-muted-foreground mb-5 text-sm font-medium">
+                            Listen a little closer
+                        </p>
+                        <blockquote className="text-xl leading-relaxed font-medium sm:text-3xl">
+                            From Builder gives us the space to ask better
+                            questions and the clarity to turn what we hear into
+                            better experiences.
+                        </blockquote>
+                        <p className="text-muted-foreground mt-6 text-sm">
+                            A team that listens · Customer feedback, made useful
+                        </p>
+                    </div>
+                </Reveal>
+            </section>
+
+            <section id="pricing" className="px-6 py-20 sm:px-12 sm:py-28">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mb-10">
+                        <p className="text-muted-foreground mb-4 text-sm font-medium">
+                            Start small, scale naturally
+                        </p>
+                        <h2 className="text-2xl font-medium sm:text-[30px]">
+                            A plan for every kind of team.
+                        </h2>
+                        <p className="text-muted-foreground mt-3 text-base">
+                            Begin with what you need today. Upgrade when your
+                            work grows.
+                        </p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {plans.map((plan) => (
+                            <Reveal key={plan.name}>
+                                <article
+                                    className={`flex h-full flex-col p-6 ${cardClass}`}
+                                >
+                                    <h3 className="font-montserrat text-lg font-semibold">
+                                        {plan.name}
+                                    </h3>
+                                    <p className="font-montserrat mt-4 text-3xl font-semibold">
+                                        {plan.price}
+                                        <span className="text-muted-foreground ml-1 text-sm font-normal">
+                                            {plan.name === "Pro"
+                                                ? "/ month"
+                                                : ""}
+                                        </span>
+                                    </p>
+                                    <p className="text-muted-foreground mt-2 min-h-10 text-sm">
+                                        {plan.desc}
+                                    </p>
+                                    <ul className="mt-5 flex-1 space-y-3">
+                                        {plan.features.map((feature) => (
+                                            <li
+                                                key={feature}
+                                                className="text-muted-foreground flex items-center gap-2 text-sm"
+                                            >
+                                                <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Button
+                                        asChild
+                                        variant="soft"
+                                        className="mt-6 w-full"
+                                    >
+                                        <Link href="/signup">
+                                            {plan.name === "Enterprise"
+                                                ? "Contact us"
+                                                : "Get started"}
+                                        </Link>
+                                    </Button>
+                                </article>
+                            </Reveal>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className="px-6 py-16 sm:px-12 sm:py-20">
+                <div
+                    className={`mx-auto max-w-5xl p-8 text-center sm:p-14 ${cardClass}`}
+                >
+                    <p className="text-muted-foreground mb-4 text-sm font-medium">
+                        Make listening part of the work
+                    </p>
+                    <h2 className="mx-auto max-w-3xl text-3xl leading-tight font-medium sm:text-5xl">
+                        Turn customer feedback into your next great idea.
+                    </h2>
+                    <p className="text-muted-foreground mx-auto mt-5 max-w-2xl text-base">
+                        Start building thoughtful forms and give every answer
+                        somewhere meaningful to go.
+                    </p>
+                    <Button asChild variant="solid" size="lg" className="mt-7">
+                        <Link href="/signup">Create your free workspace</Link>
+                    </Button>
                 </div>
             </section>
 

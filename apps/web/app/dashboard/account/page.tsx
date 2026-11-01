@@ -4,6 +4,7 @@ import { IconAt, IconId, IconLock, IconUserCircle } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import {
     Card,
     CardContent,
@@ -12,8 +13,8 @@ import {
     CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
-import { Skeleton } from "~/components/ui/skeleton";
 import { useUser } from "~/hooks/api/auth";
+import { DashboardPage, PageHeading, PageState } from "~/components/app-page";
 
 function initials(name: string) {
     return (
@@ -27,18 +28,35 @@ function initials(name: string) {
 }
 
 export default function AccountPage() {
-    const { user, isPending } = useUser();
+    const { user, isPending, isError, error, refetch } = useUser();
 
-    if (isPending || !user) {
+    if (isPending || !user || isError) {
         return (
-            <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-40" />
-                    <Skeleton className="h-4 w-72" />
-                </div>
-                <Skeleton className="h-48 w-full max-w-3xl" />
-                <Skeleton className="h-40 w-full max-w-3xl" />
-            </main>
+            <DashboardPage>
+                <PageHeading
+                    title="Account"
+                    description="View your profile and account details."
+                />
+                <PageState
+                    variant={isError ? "error" : "loading"}
+                    title={
+                        isError
+                            ? "Could not load account details"
+                            : "Loading account details"
+                    }
+                    description={isError ? error?.message : undefined}
+                    className="min-h-64 max-w-4xl"
+                >
+                    {isError && (
+                        <Button
+                            variant="outline"
+                            onClick={() => void refetch()}
+                        >
+                            Try again
+                        </Button>
+                    )}
+                </PageState>
+            </DashboardPage>
         );
     }
 
@@ -46,17 +64,11 @@ export default function AccountPage() {
     const email = user.email?.trim() || "Not provided";
 
     return (
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-            <div className="space-y-1">
-                <p className="text-muted-foreground text-sm">Workspace</p>
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    Account
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                    View your profile and account details.
-                </p>
-            </div>
-
+        <DashboardPage>
+            <PageHeading
+                title="Account"
+                description="View your profile and account details."
+            />
             <div className="grid w-full max-w-4xl gap-6">
                 <Card>
                     <CardHeader>
@@ -88,7 +100,7 @@ export default function AccountPage() {
                                     {email}
                                 </p>
                             </div>
-                            <Badge variant="secondary">Account owner</Badge>
+                            <Badge variant="outline">Account owner</Badge>
                         </div>
                         <Separator className="my-6" />
                         <dl className="grid gap-5 sm:grid-cols-2">
@@ -154,6 +166,6 @@ export default function AccountPage() {
                     </CardContent>
                 </Card>
             </div>
-        </main>
+        </DashboardPage>
     );
 }

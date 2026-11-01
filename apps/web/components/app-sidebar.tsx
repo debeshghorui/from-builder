@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { WandSparkles } from "lucide-react";
 import {
     IconCamera,
     IconDashboard,
@@ -8,7 +10,6 @@ import {
     IconFileAi,
     IconFileDescription,
     IconHelp,
-    IconInnerShadowTop,
     IconClipboardText,
     IconReport,
     IconSearch,
@@ -93,12 +94,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             asChild
                             className="data-[slot=sidebar-menu-button]:p-1.5!"
                         >
-                            <a href="#">
-                                <IconInnerShadowTop className="size-5!" />
+                            <Link href="/" aria-label="From Builder home">
+                                <WandSparkles className="text-brand size-5!" />
                                 <span className="text-base font-semibold">
-                                    {user?.fullName ?? "Dashboard"}
+                                    From Builder
                                 </span>
-                            </a>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

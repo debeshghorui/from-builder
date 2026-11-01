@@ -35,6 +35,12 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
+import {
+    DashboardPage,
+    FormStatus,
+    PageHeading,
+    PageState,
+} from "~/components/app-page";
 
 const fieldTypes = [
     "TEXT",
@@ -51,12 +57,14 @@ export default function FormBuilderPage() {
     const { id: formId } = useParams<{ id: string }>();
     const {
         form,
+        refetch: refetchForm,
         isPending: isFormPending,
         isError: isFormError,
         error: formError,
     } = useGetFormById(formId);
     const {
         formFields,
+        refetch: refetchFields,
         isPending: areFieldsPending,
         isError: areFieldsError,
         error: fieldsError,
@@ -171,52 +179,62 @@ export default function FormBuilderPage() {
     };
 
     if (isFormPending) {
-        return <main className="p-6 text-sm">Loading form…</main>;
+        return (
+            <DashboardPage>
+                <PageState
+                    variant="loading"
+                    title="Loading form"
+                    className="min-h-64"
+                />
+            </DashboardPage>
+        );
     }
 
     if (isFormError || !form) {
         return (
-            <main className="space-y-4 p-6">
-                <p className="text-destructive" role="alert">
-                    {formError?.message || "Could not load this form."}
-                </p>
-                <Button asChild variant="outline">
-                    <Link href="/dashboard/forms">
-                        <ArrowLeft aria-hidden="true" />
-                        Back to forms
-                    </Link>
-                </Button>
-            </main>
+            <DashboardPage>
+                <PageState
+                    variant="error"
+                    title="Could not load this form"
+                    description={
+                        formError?.message || "Please try again in a moment."
+                    }
+                    className="min-h-64"
+                >
+                    <div className="flex flex-wrap justify-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => void refetchForm()}
+                        >
+                            Try again
+                        </Button>
+                        <Button asChild variant="ghost">
+                            <Link href="/dashboard/forms">
+                                <ArrowLeft aria-hidden="true" />
+                                Back to forms
+                            </Link>
+                        </Button>
+                    </div>
+                </PageState>
+            </DashboardPage>
         );
     }
 
     return (
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-            <div>
+        <DashboardPage>
+            <div className="space-y-3">
                 <Button asChild variant="ghost" className="mb-3 -ml-3">
                     <Link href="/dashboard/forms">
                         <ArrowLeft aria-hidden="true" />
                         All forms
                     </Link>
                 </Button>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <p className="text-muted-foreground text-sm">
-                            Form builder
-                        </p>
-                        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-                            {form.title}
-                        </h1>
-                        {form.description && (
-                            <p className="text-muted-foreground mt-2 text-sm">
-                                {form.description}
-                            </p>
-                        )}
-                    </div>
-                    <span className="bg-muted rounded-full px-3 py-1 text-xs font-medium">
-                        {form.published ? "Published" : "Draft"}
-                    </span>
-                </div>
+                <PageHeading
+                    eyebrow="Form builder"
+                    title={form.title}
+                    description={form.description ?? undefined}
+                    actions={<FormStatus published={form.published} />}
+                />
             </div>
 
             <section className="space-y-4">
@@ -237,23 +255,35 @@ export default function FormBuilderPage() {
                 </div>
 
                 {areFieldsPending ? (
-                    <div className="text-muted-foreground rounded-xl border p-6 text-sm">
-                        Loading fields…
-                    </div>
+                    <PageState
+                        variant="loading"
+                        title="Loading form fields"
+                        className="min-h-48"
+                    />
                 ) : areFieldsError ? (
-                    <div
-                        className="text-destructive rounded-xl border p-6 text-sm"
-                        role="alert"
+                    <PageState
+                        variant="error"
+                        title="Could not load form fields"
+                        description={
+                            fieldsError?.message ||
+                            "Please try again in a moment."
+                        }
+                        className="min-h-48"
                     >
-                        {fieldsError?.message || "Could not load form fields."}
-                    </div>
+                        <Button
+                            variant="outline"
+                            onClick={() => void refetchFields()}
+                        >
+                            Try again
+                        </Button>
+                    </PageState>
                 ) : formFields && formFields.length > 0 ? (
                     <ol className="space-y-3">
                         {formFields.map(
                             (field: FormFieldListItem, index: number) => (
                                 <li
                                     key={field.id}
-                                    className="bg-card flex items-start justify-between gap-4 rounded-xl border p-4"
+                                    className="card-chai flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between"
                                 >
                                     <div className="flex min-w-0 items-start gap-3">
                                         <span className="text-muted-foreground mt-0.5 text-sm">
@@ -270,7 +300,7 @@ export default function FormBuilderPage() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex shrink-0 items-center gap-2">
+                                    <div className="flex flex-wrap items-center justify-end gap-2 sm:shrink-0">
                                         <div className="text-muted-foreground flex items-center gap-3 text-xs">
                                             <span>
                                                 {field.type.replaceAll(
@@ -311,20 +341,20 @@ export default function FormBuilderPage() {
                         )}
                     </ol>
                 ) : (
-                    <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed px-6 text-center">
-                        <h3 className="font-medium">No fields yet</h3>
-                        <p className="text-muted-foreground mt-2 max-w-sm text-sm">
-                            Add your first field to start building this form.
-                        </p>
+                    <PageState
+                        variant="empty"
+                        title="No fields yet"
+                        description="Add your first field to start building this form."
+                        className="min-h-48"
+                    >
                         <Button
-                            className="mt-4"
                             variant="outline"
                             onClick={openCreateFieldDialog}
                         >
                             <Plus aria-hidden="true" />
                             Add first field
                         </Button>
-                    </div>
+                    </PageState>
                 )}
             </section>
 
@@ -509,6 +539,7 @@ export default function FormBuilderPage() {
                         </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={isDeletingField}
+                            className="bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/30 text-white"
                             onClick={(event) => {
                                 event.preventDefault();
                                 void handleDeleteField();
@@ -519,6 +550,6 @@ export default function FormBuilderPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </main>
+        </DashboardPage>
     );
 }

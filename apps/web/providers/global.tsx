@@ -1,9 +1,9 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 import React, { useState } from "react";
 import { Toaster } from "~/components/ui/sonner";
+import { ThemeProvider } from "~/components/theme-provider";
 
 import { trpc } from "~/trpc/client";
 import { createTRPCHttpBatchClientClient } from "~/trpc/create-client";
@@ -27,17 +27,12 @@ export const GlobalProviders: React.FC<{ children: React.ReactNode }> = ({
     );
     return (
         <QueryClientProvider client={queryClient}>
-            <NextThemesProvider
-                attribute="class"
-                defaultTheme="light"
-                enableSystem
-                disableTransitionOnChange
-            >
+            <ThemeProvider>
                 <trpc.Provider queryClient={queryClient} client={trpcClient}>
                     {children}
                     <Toaster />
                 </trpc.Provider>
-            </NextThemesProvider>
+            </ThemeProvider>
         </QueryClientProvider>
     );
 };

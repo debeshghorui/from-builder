@@ -111,6 +111,7 @@ export const useUser = () => {
         failureReason,
         failureCount,
         status,
+        refetch,
     } = trpc.auth.getLoggedInUserInfo.useQuery();
 
     return {
@@ -125,5 +126,6 @@ export const useUser = () => {
         failureReason,
         failureCount,
         status,
+        refetch,
     };
 };

@@ -18,7 +18,12 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
-import { TablerIllustration } from "~/components/tabler-illustration";
+import {
+    DashboardPage,
+    FormStatus,
+    PageHeading,
+    PageState,
+} from "~/components/app-page";
 
 type FormListItem = RouterOutputs["form"]["getAllFormsByUserId"][number];
 
@@ -29,6 +34,7 @@ export default function FormsPage() {
     const { createFormAsync, isPending } = useCreateForm();
     const {
         forms,
+        refetch: refetchForms,
         isPending: isFormsPending,
         isError: isFormsError,
         error: formsError,
@@ -57,36 +63,40 @@ export default function FormsPage() {
     };
 
     return (
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Forms
-                    </h1>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                        Create and manage forms for your workspace.
-                    </p>
-                </div>
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                    <Plus aria-hidden="true" />
-                    Create form
-                </Button>
-            </div>
+        <DashboardPage>
+            <PageHeading
+                title="Forms"
+                description="Create and manage forms for your workspace."
+                actions={
+                    <Button onClick={() => setIsCreateDialogOpen(true)}>
+                        <Plus aria-hidden="true" />
+                        Create form
+                    </Button>
+                }
+            />
 
             {isFormsPending ? (
-                <section
-                    className="text-muted-foreground flex min-h-64 items-center justify-center rounded-xl border border-dashed text-sm"
-                    aria-live="polite"
-                >
-                    Loading your forms…
-                </section>
+                <PageState
+                    variant="loading"
+                    title="Loading your forms"
+                    className="min-h-64"
+                />
             ) : isFormsError ? (
-                <section
-                    className="text-destructive flex min-h-64 items-center justify-center rounded-xl border border-dashed px-6 text-center text-sm"
-                    role="alert"
+                <PageState
+                    variant="error"
+                    title="Could not load your forms"
+                    description={
+                        formsError?.message || "Please try again in a moment."
+                    }
+                    className="min-h-64"
                 >
-                    {formsError?.message || "Could not load your forms."}
-                </section>
+                    <Button
+                        variant="outline"
+                        onClick={() => void refetchForms()}
+                    >
+                        Try again
+                    </Button>
+                </PageState>
             ) : forms && forms.length > 0 ? (
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {forms.map((form: FormListItem) => {
@@ -104,7 +114,7 @@ export default function FormsPage() {
                             <Link
                                 key={form.id}
                                 href={`/dashboard/forms/${form.id}`}
-                                className="group bg-card hover:border-primary/50 focus-visible:ring-ring rounded-xl border p-5 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                                className="card-chai group focus-visible:ring-ring p-5 focus-visible:ring-2 focus-visible:outline-none"
                             >
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
@@ -125,15 +135,7 @@ export default function FormsPage() {
                                     {form.description || "No description"}
                                 </p>
                                 <div className="text-muted-foreground mt-5 flex items-center justify-between gap-3 text-xs">
-                                    <span
-                                        className={
-                                            form.published
-                                                ? "text-emerald-600 dark:text-emerald-400"
-                                                : ""
-                                        }
-                                    >
-                                        {form.published ? "Published" : "Draft"}
-                                    </span>
+                                    <FormStatus published={form.published} />
                                     <span>{createdAtLabel}</span>
                                 </div>
                             </Link>
@@ -141,28 +143,20 @@ export default function FormsPage() {
                     })}
                 </section>
             ) : (
-                <section className="flex min-h-64 flex-1 items-center justify-center rounded-xl border border-dashed">
-                    <div className="max-w-sm px-6 text-center">
-                        <TablerIllustration
-                            name="project"
-                            alt="A person organizing a project"
-                            sizes="192px"
-                            className="mx-auto mb-3 h-36 w-48 object-contain"
-                        />
-                        <h2 className="font-medium">Start with a new form</h2>
-                        <p className="text-muted-foreground mt-2 text-sm">
-                            Create a form to start collecting responses.
-                        </p>
-                        <Button
-                            className="mt-5"
-                            variant="outline"
-                            onClick={() => setIsCreateDialogOpen(true)}
-                        >
-                            <Plus aria-hidden="true" />
-                            Create your first form
-                        </Button>
-                    </div>
-                </section>
+                <PageState
+                    variant="empty"
+                    title="Start with a new form"
+                    description="Create a form to start collecting responses."
+                    className="min-h-64"
+                >
+                    <Button
+                        variant="outline"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                    >
+                        <Plus aria-hidden="true" />
+                        Create your first form
+                    </Button>
+                </PageState>
             )}
 
             <Dialog
@@ -228,6 +222,6 @@ export default function FormsPage() {
                     </form>
                 </DialogContent>
             </Dialog>
-        </main>
+        </DashboardPage>
     );
 }
