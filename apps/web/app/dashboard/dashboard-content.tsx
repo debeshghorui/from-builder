@@ -1,21 +1,22 @@
 import { ChartAreaInteractive } from "~/components/chart-area-interactive";
 import { DataTable } from "~/components/data-table";
 import { SectionCards } from "~/components/section-cards";
+import { DashboardPage, PageHeading } from "~/components/app-page";
 
 import data from "./data.json";
 
 export function DashboardContent() {
     return (
-        <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                    <SectionCards />
-                    <div className="px-4 lg:px-6">
-                        <ChartAreaInteractive />
-                    </div>
-                    <DataTable data={data} />
-                </div>
+        <DashboardPage>
+            <PageHeading
+                title="Dashboard"
+                description="A snapshot of activity across your workspace."
+            />
+            <div className="@container/main flex w-full flex-col gap-6">
+                <SectionCards />
+                <ChartAreaInteractive />
+                <DataTable data={data} />
             </div>
-        </div>
+        </DashboardPage>
     );
 }

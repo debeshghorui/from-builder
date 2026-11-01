@@ -1,18 +1,27 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
-import type { RouterOutputs } from "@repo/trpc/client";
+import { closestCenter, DndContext, DragOverlay } from "@dnd-kit/core";
+import {
+    SortableContext,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { ArrowLeft, Plus } from "lucide-react";
 
 import {
-    useCreateFormField,
-    useDeleteFormField,
-    useGetFormById,
-    useGetFormFields,
-    useUpdateFormField,
-} from "~/hooks/api/form";
+    CanvasDropSurface,
+    CanvasField,
+} from "~/components/form-builder/canvas-field";
+import { FieldInspector } from "~/components/form-builder/field-inspector";
+import { FieldPalette } from "~/components/form-builder/field-palette";
+import {
+    fieldTypeDetails,
+    isFormFieldType,
+} from "~/components/form-builder/types";
+import { useFormBuilder } from "~/hooks/form-builder/use-form-builder";
+import { useGetFormById } from "~/hooks/api/form";
 import { Button } from "~/components/ui/button";
 import {
     AlertDialog,
@@ -25,500 +34,413 @@ import {
     AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
-
-const fieldTypes = [
-    "TEXT",
-    "NUMBER",
-    "EMAIL",
-    "PHONE",
-    "YES_NO",
-    "PASSWORD",
-] as const;
-type FormFieldType = (typeof fieldTypes)[number];
-type FormFieldListItem = RouterOutputs["form"]["getFormFields"][number];
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerHeader,
+    DrawerTitle,
+} from "~/components/ui/drawer";
+import { useIsMobile } from "~/hooks/use-mobile";
+import {
+    DashboardPage,
+    FormStatus,
+    PageHeading,
+    PageState,
+} from "~/components/app-page";
 
 export default function FormBuilderPage() {
     const { id: formId } = useParams<{ id: string }>();
-    const {
-        form,
-        isPending: isFormPending,
-        isError: isFormError,
-        error: formError,
-    } = useGetFormById(formId);
-    const {
-        formFields,
-        isPending: areFieldsPending,
-        isError: areFieldsError,
-        error: fieldsError,
-    } = useGetFormFields(formId);
-    const { createFormFieldAsync, isPending: isCreatingField } =
-        useCreateFormField();
-    const { updateFormFieldAsync, isPending: isUpdatingField } =
-        useUpdateFormField();
-    const { deleteFormFieldAsync, isPending: isDeletingField } =
-        useDeleteFormField();
-    const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
-    const [editingField, setEditingField] = useState<FormFieldListItem | null>(
-        null,
-    );
-    const [fieldToDelete, setFieldToDelete] =
-        useState<FormFieldListItem | null>(null);
-    const [label, setLabel] = useState("");
-    const [description, setDescription] = useState("");
-    const [placeholder, setPlaceholder] = useState("");
-    const [optionsJson, setOptionsJson] = useState("");
-    const [optionsError, setOptionsError] = useState<string | null>(null);
-    const [fieldType, setFieldType] = useState<FormFieldType>("TEXT");
-    const [isRequired, setIsRequired] = useState(false);
+    const formQuery = useGetFormById(formId);
+    const builder = useFormBuilder(formId);
+    const isMobile = useIsMobile();
+    const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+    const activePaletteType: unknown = builder.drag.activePaletteType;
+    const activePaletteDetails = isFormFieldType(activePaletteType)
+        ? fieldTypeDetails[activePaletteType]
+        : null;
+    const ActivePaletteIcon = activePaletteDetails?.icon;
 
-    const resetFieldEditor = () => {
-        setLabel("");
-        setDescription("");
-        setPlaceholder("");
-        setOptionsJson("");
-        setOptionsError(null);
-        setFieldType("TEXT");
-        setIsRequired(false);
-    };
-
-    const openCreateFieldDialog = () => {
-        setEditingField(null);
-        resetFieldEditor();
-        setIsAddFieldOpen(true);
-    };
-
-    const openEditFieldDialog = (field: FormFieldListItem) => {
-        setEditingField(field);
-        setLabel(field.label);
-        setDescription(field.description ?? "");
-        setPlaceholder(field.placeholder ?? "");
-        setOptionsJson(
-            field.options == null
-                ? ""
-                : (JSON.stringify(field.options, null, 2) ?? ""),
-        );
-        setOptionsError(null);
-        setFieldType(field.type);
-        setIsRequired(field.isRequired);
-        setIsAddFieldOpen(true);
-    };
-
-    const handleAddField = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const trimmedLabel = label.trim();
-        if (!trimmedLabel) return;
-
-        let options: unknown;
-        if (optionsJson.trim()) {
-            try {
-                options = JSON.parse(optionsJson);
-            } catch {
-                setOptionsError("Enter valid JSON for field options.");
-                return;
-            }
-        }
-
-        setOptionsError(null);
-        try {
-            const fieldInput = {
-                formId,
-                label: trimmedLabel,
-                description: description.trim() || null,
-                placeholder: placeholder.trim() || null,
-                type: fieldType,
-                isRequired,
-                options: optionsJson.trim() ? options : null,
-            };
-
-            if (editingField) {
-                await updateFormFieldAsync({
-                    ...fieldInput,
-                    id: editingField.id,
-                });
-            } else {
-                await createFormFieldAsync(fieldInput);
-            }
-        } catch {
-            return;
-        }
-
-        resetFieldEditor();
-        setEditingField(null);
-        setIsAddFieldOpen(false);
-    };
-
-    const handleDeleteField = async () => {
-        if (!fieldToDelete) return;
-        try {
-            await deleteFormFieldAsync({
-                id: fieldToDelete.id,
-                formId,
-            });
-            setFieldToDelete(null);
-        } catch {
-            // The mutation hook displays the error toast and keeps the dialog open.
-        }
-    };
-
-    if (isFormPending) {
-        return <main className="p-6 text-sm">Loading form…</main>;
-    }
-
-    if (isFormError || !form) {
+    if (formQuery.isPending) {
         return (
-            <main className="space-y-4 p-6">
-                <p className="text-destructive" role="alert">
-                    {formError?.message || "Could not load this form."}
-                </p>
-                <Button asChild variant="outline">
-                    <Link href="/dashboard/forms">
-                        <ArrowLeft aria-hidden="true" />
-                        Back to forms
-                    </Link>
-                </Button>
-            </main>
+            <DashboardPage>
+                <PageState
+                    variant="loading"
+                    title="Loading form"
+                    className="min-h-64"
+                />
+            </DashboardPage>
         );
     }
+
+    if (formQuery.isError || !formQuery.form) {
+        return (
+            <DashboardPage>
+                <PageState
+                    variant="error"
+                    title="Could not load this form"
+                    description={
+                        formQuery.error?.message ||
+                        "Please try again in a moment."
+                    }
+                    className="min-h-64"
+                >
+                    <div className="flex flex-wrap justify-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => void formQuery.refetch()}
+                        >
+                            Try again
+                        </Button>
+                        <Button asChild variant="ghost">
+                            <Link href="/dashboard/forms">
+                                <ArrowLeft aria-hidden="true" />
+                                Back to forms
+                            </Link>
+                        </Button>
+                    </div>
+                </PageState>
+            </DashboardPage>
+        );
+    }
+
+    const form = formQuery.form;
+    const paletteDisabled =
+        builder.fields.isAtLimit ||
+        builder.fields.isLoading ||
+        builder.fields.isError ||
+        builder.palette.isAdding;
+
+    const renderInspector = () => (
+        <FieldInspector
+            field={
+                builder.selection.isInspectorOpen
+                    ? builder.selection.field
+                    : null
+            }
+            values={builder.editor.values}
+            saving={builder.editor.isSaving || builder.palette.isAdding}
+            labelError={builder.editor.labelError}
+            optionsError={builder.editor.optionsError}
+            onChange={builder.editor.setValues}
+            onSave={(event) => void builder.editor.save(event)}
+            onCancel={builder.selection.requestClose}
+            onDelete={builder.dialogs.deleteField.setField}
+        />
+    );
+
+    const handleMobilePaletteAdd = async (
+        type: Parameters<typeof builder.palette.add>[0],
+    ) => {
+        await builder.palette.add(type);
+        setIsPaletteOpen(false);
+    };
 
     return (
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-            <div>
+        <DashboardPage>
+            <div className="space-y-3">
                 <Button asChild variant="ghost" className="mb-3 -ml-3">
                     <Link href="/dashboard/forms">
                         <ArrowLeft aria-hidden="true" />
                         All forms
                     </Link>
                 </Button>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <p className="text-muted-foreground text-sm">
-                            Form builder
-                        </p>
-                        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-                            {form.title}
-                        </h1>
-                        {form.description && (
-                            <p className="text-muted-foreground mt-2 text-sm">
-                                {form.description}
-                            </p>
-                        )}
-                    </div>
-                    <span className="bg-muted rounded-full px-3 py-1 text-xs font-medium">
-                        {form.published ? "Published" : "Draft"}
-                    </span>
-                </div>
+                <PageHeading
+                    eyebrow="Form builder"
+                    title={form.title}
+                    description={form.description ?? undefined}
+                    actions={<FormStatus published={form.published} />}
+                />
             </div>
 
-            <section className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 className="text-lg font-semibold">Form fields</h2>
-                        <p className="text-muted-foreground text-sm">
-                            Add and arrange the questions people will answer.
-                        </p>
-                    </div>
+            <DndContext
+                sensors={builder.drag.sensors}
+                collisionDetection={closestCenter}
+                onDragStart={builder.drag.onStart}
+                onDragEnd={(event) => void builder.drag.onEnd(event)}
+                onDragCancel={builder.drag.onCancel}
+            >
+                <div className="flex flex-wrap gap-2 lg:hidden">
                     <Button
-                        onClick={openCreateFieldDialog}
-                        disabled={(formFields?.length ?? 0) >= 100}
+                        variant="outline"
+                        onClick={() => setIsPaletteOpen(true)}
+                        disabled={paletteDisabled}
                     >
                         <Plus aria-hidden="true" />
-                        Add field
+                        Add question
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            const selectedField = builder.selection.field;
+                            if (selectedField)
+                                builder.selection.request(selectedField.id);
+                        }}
+                        disabled={!builder.selection.field}
+                    >
+                        Field settings
                     </Button>
                 </div>
 
-                {areFieldsPending ? (
-                    <div className="text-muted-foreground rounded-xl border p-6 text-sm">
-                        Loading fields…
-                    </div>
-                ) : areFieldsError ? (
-                    <div
-                        className="text-destructive rounded-xl border p-6 text-sm"
-                        role="alert"
-                    >
-                        {fieldsError?.message || "Could not load form fields."}
-                    </div>
-                ) : formFields && formFields.length > 0 ? (
-                    <ol className="space-y-3">
-                        {formFields.map(
-                            (field: FormFieldListItem, index: number) => (
-                                <li
-                                    key={field.id}
-                                    className="bg-card flex items-start justify-between gap-4 rounded-xl border p-4"
-                                >
-                                    <div className="flex min-w-0 items-start gap-3">
-                                        <span className="text-muted-foreground mt-0.5 text-sm">
-                                            {index + 1}.
-                                        </span>
-                                        <div className="min-w-0">
-                                            <p className="truncate font-medium">
-                                                {field.label}
-                                            </p>
-                                            {field.description && (
-                                                <p className="text-muted-foreground mt-1 text-sm">
-                                                    {field.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        <div className="text-muted-foreground flex items-center gap-3 text-xs">
-                                            <span>
-                                                {field.type.replaceAll(
-                                                    "_",
-                                                    " ",
-                                                )}
-                                            </span>
-                                            {field.isRequired && (
-                                                <span>Required</span>
-                                            )}
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            aria-label={`Edit ${field.label}`}
-                                            onClick={() =>
-                                                openEditFieldDialog(field)
-                                            }
-                                        >
-                                            <Pencil aria-hidden="true" />
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                            aria-label={`Delete ${field.label}`}
-                                            onClick={() =>
-                                                setFieldToDelete(field)
-                                            }
-                                        >
-                                            <Trash2 aria-hidden="true" />
-                                        </Button>
-                                    </div>
-                                </li>
-                            ),
-                        )}
-                    </ol>
-                ) : (
-                    <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed px-6 text-center">
-                        <h3 className="font-medium">No fields yet</h3>
-                        <p className="text-muted-foreground mt-2 max-w-sm text-sm">
-                            Add your first field to start building this form.
-                        </p>
-                        <Button
-                            className="mt-4"
-                            variant="outline"
-                            onClick={openCreateFieldDialog}
-                        >
-                            <Plus aria-hidden="true" />
-                            Add first field
-                        </Button>
-                    </div>
-                )}
-            </section>
+                <div className="grid min-w-0 gap-4 lg:grid-cols-[15rem_minmax(0,1fr)_20rem]">
+                    {!isMobile && (
+                        <aside className="card-chai h-fit p-4 lg:sticky lg:top-4">
+                            <FieldPalette
+                                disabled={paletteDisabled}
+                                onAdd={(type) => void builder.palette.add(type)}
+                            />
+                        </aside>
+                    )}
 
-            <Dialog
-                open={isAddFieldOpen}
-                onOpenChange={(open) => {
-                    setIsAddFieldOpen(open);
-                    if (!open) setEditingField(null);
-                }}
-            >
-                <DialogContent className="max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {editingField
-                                ? "Edit form field"
-                                : "Add a form field"}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Set the label, response type, and other field
-                            details.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form className="space-y-5" onSubmit={handleAddField}>
-                        <div className="space-y-2">
-                            <Label htmlFor="field-label">Field label</Label>
-                            <Input
-                                id="field-label"
-                                autoFocus
-                                maxLength={55}
-                                required
-                                placeholder="e.g. Your name"
-                                value={label}
-                                onChange={(event) =>
-                                    setLabel(event.target.value)
-                                }
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="field-description">
-                                Description{" "}
-                                <span className="text-muted-foreground">
-                                    (optional)
-                                </span>
-                            </Label>
-                            <Textarea
-                                id="field-description"
-                                placeholder="Help explain this question"
-                                value={description}
-                                onChange={(event) =>
-                                    setDescription(event.target.value)
-                                }
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="field-placeholder">
-                                Placeholder{" "}
-                                <span className="text-muted-foreground">
-                                    (optional)
-                                </span>
-                            </Label>
-                            <Input
-                                id="field-placeholder"
-                                placeholder="Text shown inside the answer field"
-                                value={placeholder}
-                                onChange={(event) =>
-                                    setPlaceholder(event.target.value)
-                                }
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="field-type">Response type</Label>
-                            <select
-                                id="field-type"
-                                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-                                value={fieldType}
-                                onChange={(event) =>
-                                    setFieldType(
-                                        event.target.value as FormFieldType,
-                                    )
-                                }
-                            >
-                                {fieldTypes.map((type) => (
-                                    <option key={type} value={type}>
-                                        {type.replaceAll("_", " ")}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="field-options">
-                                Options{" "}
-                                <span className="text-muted-foreground">
-                                    (optional JSON)
-                                </span>
-                            </Label>
-                            <Textarea
-                                id="field-options"
-                                rows={4}
-                                placeholder={
-                                    '{"choices":["Option 1","Option 2"]}'
-                                }
-                                value={optionsJson}
-                                aria-invalid={Boolean(optionsError)}
-                                onChange={(event) => {
-                                    setOptionsJson(event.target.value);
-                                    setOptionsError(null);
-                                }}
-                            />
-                            {optionsError && (
-                                <p
-                                    className="text-destructive text-sm"
-                                    role="alert"
-                                >
-                                    {optionsError}
+                    <section
+                        aria-label="Form canvas"
+                        className="min-w-0 space-y-3"
+                    >
+                        <header className="flex items-end justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-semibold">
+                                    Form canvas
+                                </h2>
+                                <p className="text-muted-foreground text-sm">
+                                    Add questions and arrange what respondents
+                                    see.
                                 </p>
+                            </div>
+                            <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                                {builder.fields.count} / 100
+                            </span>
+                        </header>
+
+                        <CanvasDropSurface>
+                            {builder.fields.isLoading ? (
+                                <PageState
+                                    variant="loading"
+                                    title="Loading form fields"
+                                    className="min-h-64"
+                                />
+                            ) : builder.fields.isError ? (
+                                <PageState
+                                    variant="error"
+                                    title="Could not load form fields"
+                                    description={
+                                        builder.fields.error?.message ||
+                                        "Please try again in a moment."
+                                    }
+                                    className="min-h-64"
+                                >
+                                    <Button
+                                        variant="outline"
+                                        onClick={() =>
+                                            void builder.fields.refetch()
+                                        }
+                                    >
+                                        Try again
+                                    </Button>
+                                </PageState>
+                            ) : builder.fields.items.length > 0 ? (
+                                <SortableContext
+                                    items={builder.fields.items.map(
+                                        (field) => field.id,
+                                    )}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    <ol className="space-y-3">
+                                        {builder.fields.items.map(
+                                            (field, index) => (
+                                                <CanvasField
+                                                    key={field.id}
+                                                    field={field}
+                                                    position={index + 1}
+                                                    disabled={
+                                                        builder.drag
+                                                            .isReordering ||
+                                                        builder.palette.isAdding
+                                                    }
+                                                    selectionDisabled={
+                                                        builder.palette.isAdding
+                                                    }
+                                                    selected={
+                                                        field.id ===
+                                                        builder.selection
+                                                            .fieldId
+                                                    }
+                                                    onSelect={() =>
+                                                        builder.selection.request(
+                                                            field.id,
+                                                        )
+                                                    }
+                                                />
+                                            ),
+                                        )}
+                                    </ol>
+                                </SortableContext>
+                            ) : (
+                                <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-5 text-center">
+                                    <Plus
+                                        aria-hidden="true"
+                                        className="text-muted-foreground size-5"
+                                    />
+                                    <h3 className="text-sm font-semibold">
+                                        Your canvas is empty
+                                    </h3>
+                                    <p className="text-muted-foreground max-w-xs text-sm">
+                                        Drag a question type here or select one
+                                        from the palette to start your form.
+                                    </p>
+                                </div>
                             )}
-                            <p className="text-muted-foreground text-xs">
-                                Stored as JSON for field types that need extra
-                                configuration.
-                            </p>
-                        </div>
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                checked={isRequired}
-                                onChange={(event) =>
-                                    setIsRequired(event.target.checked)
-                                }
+                        </CanvasDropSurface>
+                    </section>
+
+                    {!isMobile && (
+                        <aside className="min-w-0">{renderInspector()}</aside>
+                    )}
+                </div>
+
+                <DragOverlay>
+                    {activePaletteDetails && ActivePaletteIcon ? (
+                        <div className="card-chai flex items-center gap-3 p-3 shadow-xl">
+                            <ActivePaletteIcon
+                                aria-hidden="true"
+                                className="size-4"
                             />
-                            Required field
-                        </label>
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={isCreatingField || isUpdatingField}
-                                onClick={() => {
-                                    setIsAddFieldOpen(false);
-                                    setEditingField(null);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={
-                                    isCreatingField ||
-                                    isUpdatingField ||
-                                    !label.trim()
-                                }
-                            >
-                                {isCreatingField || isUpdatingField
-                                    ? editingField
-                                        ? "Saving…"
-                                        : "Adding…"
-                                    : editingField
-                                      ? "Save changes"
-                                      : "Add field"}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                            <span className="text-sm font-medium">
+                                {activePaletteDetails.label}
+                            </span>
+                        </div>
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
+
+            {isMobile && (
+                <Drawer
+                    open={isPaletteOpen}
+                    onOpenChange={setIsPaletteOpen}
+                    direction="left"
+                >
+                    <DrawerContent className="overflow-y-auto p-4">
+                        <DrawerHeader className="px-0">
+                            <DrawerTitle>Add a question</DrawerTitle>
+                            <DrawerDescription>
+                                Choose a type to add it to the canvas.
+                            </DrawerDescription>
+                        </DrawerHeader>
+                        <FieldPalette
+                            disabled={paletteDisabled}
+                            onAdd={(type) => void handleMobilePaletteAdd(type)}
+                        />
+                    </DrawerContent>
+                </Drawer>
+            )}
+
+            {isMobile && (
+                <Drawer
+                    open={
+                        builder.selection.isInspectorOpen &&
+                        Boolean(builder.selection.field)
+                    }
+                    onOpenChange={(open) => {
+                        if (!open) builder.selection.requestClose();
+                    }}
+                    direction="right"
+                >
+                    <DrawerContent className="overflow-y-auto p-4 sm:max-w-lg">
+                        <DrawerHeader className="px-0">
+                            <DrawerTitle>Field settings</DrawerTitle>
+                            <DrawerDescription>
+                                Edit the selected question.
+                            </DrawerDescription>
+                        </DrawerHeader>
+                        {renderInspector()}
+                    </DrawerContent>
+                </Drawer>
+            )}
+
+            <p
+                className="sr-only"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+            >
+                {builder.announcement}
+            </p>
 
             <AlertDialog
-                open={Boolean(fieldToDelete)}
+                open={builder.dialogs.unsaved.isOpen}
                 onOpenChange={(open) => {
-                    if (!open && !isDeletingField) setFieldToDelete(null);
+                    if (!open) builder.dialogs.unsaved.close();
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Unsaved question changes
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Save your changes before leaving this question, or
+                            discard them.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Continue editing</AlertDialogCancel>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                                void builder.dialogs.unsaved.discard()
+                            }
+                        >
+                            Discard changes
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={builder.editor.isSaving}
+                            onClick={() => void builder.dialogs.unsaved.save()}
+                        >
+                            {builder.editor.isSaving
+                                ? "Saving…"
+                                : "Save changes"}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={Boolean(builder.dialogs.deleteField.field)}
+                onOpenChange={(open) => {
+                    if (!open && !builder.dialogs.deleteField.isDeleting) {
+                        builder.dialogs.deleteField.setField(null);
+                    }
                 }}
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete this field?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            “{fieldToDelete?.label}” will be removed from this
-                            form.
+                            “{builder.dialogs.deleteField.field?.label}” will be
+                            removed from this form.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeletingField}>
+                        <AlertDialogCancel
+                            disabled={builder.dialogs.deleteField.isDeleting}
+                        >
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
-                            disabled={isDeletingField}
+                            disabled={builder.dialogs.deleteField.isDeleting}
+                            className="bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/30 text-white"
                             onClick={(event) => {
                                 event.preventDefault();
-                                void handleDeleteField();
+                                void builder.dialogs.deleteField.confirm();
                             }}
                         >
-                            {isDeletingField ? "Deleting…" : "Delete field"}
+                            {builder.dialogs.deleteField.isDeleting
+                                ? "Deleting…"
+                                : "Delete field"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </main>
+        </DashboardPage>
     );
 }

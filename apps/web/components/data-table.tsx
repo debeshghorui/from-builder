@@ -435,7 +435,7 @@ export function DataTable({
             defaultValue="outline"
             className="w-full flex-col justify-start gap-6"
         >
-            <div className="flex items-center justify-between px-4 lg:px-6">
+            <div className="flex items-center justify-between">
                 <Label htmlFor="view-selector" className="sr-only">
                     View
                 </Label>
@@ -516,7 +516,7 @@ export function DataTable({
             </div>
             <TabsContent
                 value="outline"
-                className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
+                className="relative flex flex-col gap-4 overflow-auto"
             >
                 <div className="overflow-hidden rounded-lg border">
                     <DndContext
@@ -574,7 +574,7 @@ export function DataTable({
                         </Table>
                     </DndContext>
                 </div>
-                <div className="flex items-center justify-between px-4">
+                <div className="flex items-center justify-between">
                     <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
                         {table.getFilteredSelectedRowModel().rows.length} of{" "}
                         {table.getFilteredRowModel().rows.length} row(s)
@@ -671,22 +671,13 @@ export function DataTable({
                     </div>
                 </div>
             </TabsContent>
-            <TabsContent
-                value="past-performance"
-                className="flex flex-col px-4 lg:px-6"
-            >
+            <TabsContent value="past-performance" className="flex flex-col">
                 <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
             </TabsContent>
-            <TabsContent
-                value="key-personnel"
-                className="flex flex-col px-4 lg:px-6"
-            >
+            <TabsContent value="key-personnel" className="flex flex-col">
                 <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
             </TabsContent>
-            <TabsContent
-                value="focus-documents"
-                className="flex flex-col px-4 lg:px-6"
-            >
+            <TabsContent value="focus-documents" className="flex flex-col">
                 <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
             </TabsContent>
         </Tabs>

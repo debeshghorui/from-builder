@@ -24,7 +24,7 @@ export function LoginForm({
         <form className={cn("flex flex-col gap-6", className)} {...props}>
             <FieldGroup>
                 <div className="flex flex-col items-center gap-1 text-center">
-                    <h1 className="text-2xl font-bold">
+                    <h1 className="font-montserrat text-2xl font-medium tracking-tight">
                         Sign in to your account
                     </h1>
                     <p className="text-muted-foreground text-sm text-balance">
@@ -80,11 +80,17 @@ export function LoginForm({
                     </div>
                 </Field>
                 <Field>
-                    <Button type="submit">Sign in</Button>
+                    <Button type="submit" className="font-montserrat">
+                        Sign in
+                    </Button>
                 </Field>
                 <FieldSeparator>Or continue with</FieldSeparator>
                 <Field>
-                    <Button variant="outline" type="button">
+                    <Button
+                        variant="outline"
+                        type="button"
+                        className="font-montserrat"
+                    >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"

@@ -26,13 +26,15 @@ export function SignupForm({
         <form className={cn("flex flex-col gap-6", className)} {...props}>
             <FieldGroup>
                 <div className="flex flex-col items-center gap-1 text-center">
-                    <h1 className="text-2xl font-bold">Create your account</h1>
+                    <h1 className="font-montserrat text-2xl font-medium tracking-tight">
+                        Create your account
+                    </h1>
                     <p className="text-muted-foreground text-sm text-balance">
                         Fill in the form below to create your account
                     </p>
                 </div>
                 <Field>
-                    <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                    <FieldLabel htmlFor="name">Full name</FieldLabel>
                     <Input
                         id="name"
                         type="text"
@@ -123,11 +125,18 @@ export function SignupForm({
                     </FieldDescription>
                 </Field>
                 <Field>
-                    <Button type="submit">Create Account</Button>
+                    <Button type="submit" className="font-montserrat">
+                        Create account
+                    </Button>
                 </Field>
                 <FieldSeparator>Or continue with</FieldSeparator>
                 <Field>
-                    <Button variant="outline" type="button" disabled>
+                    <Button
+                        variant="outline"
+                        type="button"
+                        className="font-montserrat"
+                        disabled
+                    >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"

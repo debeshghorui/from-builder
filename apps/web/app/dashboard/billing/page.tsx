@@ -11,19 +11,15 @@ import {
     CardHeader,
     CardTitle,
 } from "~/components/ui/card";
+import { DashboardPage, PageHeading, PageState } from "~/components/app-page";
 
 export default function BillingPage() {
     return (
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-            <div className="space-y-1">
-                <p className="text-muted-foreground text-sm">Workspace</p>
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    Billing
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                    Manage your plan, payment details, and invoices.
-                </p>
-            </div>
+        <DashboardPage>
+            <PageHeading
+                title="Billing"
+                description="Manage your plan, payment details, and invoices."
+            />
 
             <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-2">
                 <Card>
@@ -37,15 +33,13 @@ export default function BillingPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="rounded-lg border border-dashed p-6 text-center">
-                            <p className="text-sm font-medium">
-                                No plan information yet
-                            </p>
-                            <p className="text-muted-foreground mt-1 text-sm">
-                                Plan details will appear here when billing is
-                                set up for your workspace.
-                            </p>
-                        </div>
+                        <PageState
+                            variant="empty"
+                            surface={false}
+                            title="No plan information yet"
+                            description="Plan details will appear here when billing is set up for your workspace."
+                            className="min-h-32 p-6"
+                        />
                     </CardContent>
                 </Card>
 
@@ -60,15 +54,13 @@ export default function BillingPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="rounded-lg border border-dashed p-6 text-center">
-                            <p className="text-sm font-medium">
-                                No payment method on file
-                            </p>
-                            <p className="text-muted-foreground mt-1 text-sm">
-                                There are no saved payment details for this
-                                account.
-                            </p>
-                        </div>
+                        <PageState
+                            variant="empty"
+                            surface={false}
+                            title="No payment method on file"
+                            description="There are no saved payment details for this account."
+                            className="min-h-32 p-6"
+                        />
                     </CardContent>
                 </Card>
 
@@ -83,19 +75,19 @@ export default function BillingPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-12 text-center">
-                            <IconFileInvoice className="text-muted-foreground mb-3 size-8" />
-                            <p className="text-sm font-medium">
-                                No invoices yet
-                            </p>
-                            <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-                                When an invoice is available, you’ll find it
-                                here.
-                            </p>
-                        </div>
+                        <PageState
+                            variant="empty"
+                            surface={false}
+                            icon={
+                                <IconFileInvoice className="text-muted-foreground mb-1 size-8" />
+                            }
+                            title="No invoices yet"
+                            description="When an invoice is available, you’ll find it here."
+                            className="min-h-48 px-6 py-10"
+                        />
                     </CardContent>
                 </Card>
             </div>
-        </main>
+        </DashboardPage>
     );
 }

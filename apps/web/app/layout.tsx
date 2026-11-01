@@ -1,20 +1,12 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import { GlobalProviders } from "~/providers/global";
-
-const geistSans = localFont({
-    src: "./fonts/GeistVF.woff",
-    variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-    src: "./fonts/GeistMonoVF.woff",
-    variable: "--font-geist-mono",
-});
+import { ThemeScript } from "~/components/theme-provider";
 
 export const metadata: Metadata = {
-    title: "Streamyst",
-    description: "Media Forwarding",
+    title: "From Builder | Forms that make feedback useful",
+    description:
+        "Create thoughtful forms, understand the responses, and turn feedback into better next steps.",
 };
 
 export default function RootLayout({
@@ -24,7 +16,10 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className="dark" suppressHydrationWarning>
-            <body className={`${geistSans.variable} ${geistMono.variable}`}>
+            <head>
+                <ThemeScript />
+            </head>
+            <body>
                 <GlobalProviders>{children}</GlobalProviders>
             </body>
         </html>
