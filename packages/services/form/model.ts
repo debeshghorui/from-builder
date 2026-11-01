@@ -10,6 +10,10 @@ export const CreateFormInputSchema = z.object({
     password: z.string().min(1).max(255).optional(),
     participantLimit: z.number().int().positive().nullable().optional(),
     participantLimitUnit: z.string().max(10).nullable().optional(),
+    collectEmail: z.boolean().optional(),
+    allowAnonymous: z.boolean().optional(),
+    responseLimit: z.number().int().positive().nullable().optional(),
+    perRespondentLimit: z.number().int().positive().nullable().optional(),
     timeLimit: z.number().int().positive().nullable().optional(),
     timeLimitUnit: z.string().max(255).nullable().optional(),
 });
@@ -24,6 +28,10 @@ export const UpdateFormInputSchema = z.object({
     password: z.string().min(1).max(255).nullable().optional(),
     participantLimit: z.number().int().positive().nullable().optional(),
     participantLimitUnit: z.string().max(10).nullable().optional(),
+    collectEmail: z.boolean().optional(),
+    allowAnonymous: z.boolean().optional(),
+    responseLimit: z.number().int().positive().nullable().optional(),
+    perRespondentLimit: z.number().int().positive().nullable().optional(),
     timeLimit: z.number().int().positive().nullable().optional(),
     timeLimitUnit: z.string().max(255).nullable().optional(),
 });
@@ -40,3 +48,23 @@ export const FormOwnerInputSchema = z.object({
     userId: uuidSchema,
 });
 export type FormOwnerInputType = z.infer<typeof FormOwnerInputSchema>;
+
+export function validateResponseSettings(settings: {
+    collectEmail: boolean;
+    allowAnonymous: boolean;
+    perRespondentLimit: number | null;
+}) {
+    if (!settings.collectEmail && !settings.allowAnonymous) {
+        throw new Error(
+            "Allow anonymous responses when email collection is disabled",
+        );
+    }
+    if (
+        settings.perRespondentLimit !== null &&
+        (settings.allowAnonymous || !settings.collectEmail)
+    ) {
+        throw new Error(
+            "Per-respondent limits require email collection for every response",
+        );
+    }
+}

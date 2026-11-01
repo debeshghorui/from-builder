@@ -1,5 +1,6 @@
-import { and, db, eq } from "@repo/database";
+import { and, count, db, eq } from "@repo/database";
 import { formFieldsTable } from "@repo/database/models/form-field";
+import { formPagesTable } from "@repo/database/models/form-page";
 import { formsTable } from "@repo/database/models/form";
 
 import {
@@ -42,7 +43,7 @@ class FormFieldsService {
     }
 
     public async reorderFields(payload: ReorderFieldsInputType) {
-        const { formId, fieldIds } =
+        const { formId, pageId, fieldIds } =
             await ReorderFieldsInputSchema.parseAsync(payload);
 
         return db.transaction(async (tx) => {
@@ -52,10 +53,12 @@ class FormFieldsService {
                 .where(eq(formsTable.id, formId))
                 .for("update");
 
+            const conditions = [eq(formFieldsTable.createdBy, formId)];
+            if (pageId) conditions.push(eq(formFieldsTable.pageId, pageId));
             const currentFields = await tx
                 .select({ id: formFieldsTable.id })
                 .from(formFieldsTable)
-                .where(eq(formFieldsTable.createdBy, formId));
+                .where(and(...conditions));
             const currentIds = new Set(currentFields.map(({ id }) => id));
 
             if (
@@ -75,6 +78,9 @@ class FormFieldsService {
                         and(
                             eq(formFieldsTable.id, id),
                             eq(formFieldsTable.createdBy, formId),
+                            ...(pageId
+                                ? [eq(formFieldsTable.pageId, pageId)]
+                                : []),
                         ),
                     );
             }
@@ -84,8 +90,13 @@ class FormFieldsService {
     }
 
     public async createField(payload: CreateFieldInputType) {
-        const { formId, position, label, ...input } =
-            await CreateFieldInputSchema.parseAsync(payload);
+        const {
+            formId,
+            pageId: requestedPageId,
+            position,
+            label,
+            ...input
+        } = await CreateFieldInputSchema.parseAsync(payload);
 
         return db.transaction(async (tx) => {
             await tx
@@ -94,13 +105,60 @@ class FormFieldsService {
                 .where(eq(formsTable.id, formId))
                 .for("update");
 
+            let pageId = requestedPageId;
+            if (pageId) {
+                const [page] = await tx
+                    .select({ id: formPagesTable.id })
+                    .from(formPagesTable)
+                    .where(
+                        and(
+                            eq(formPagesTable.id, pageId),
+                            eq(formPagesTable.formId, formId),
+                        ),
+                    )
+                    .limit(1);
+                if (!page) throw new Error("Page not found in this form");
+            } else {
+                const [existingPage] = await tx
+                    .select({ id: formPagesTable.id })
+                    .from(formPagesTable)
+                    .where(eq(formPagesTable.formId, formId))
+                    .orderBy(formPagesTable.index)
+                    .limit(1);
+                pageId = existingPage?.id;
+                if (!pageId) {
+                    const [createdPage] = await tx
+                        .insert(formPagesTable)
+                        .values({
+                            formId,
+                            title: "Page 1",
+                            index: "0.00",
+                            isStart: true,
+                        })
+                        .returning({ id: formPagesTable.id });
+                    if (!createdPage)
+                        throw new Error("Failed to create the first form page");
+                    pageId = createdPage.id;
+                }
+            }
+
             const existingFields = await tx
                 .select({ id: formFieldsTable.id })
                 .from(formFieldsTable)
-                .where(eq(formFieldsTable.createdBy, formId))
+                .where(
+                    and(
+                        eq(formFieldsTable.createdBy, formId),
+                        eq(formFieldsTable.pageId, pageId),
+                    ),
+                )
                 .orderBy(formFieldsTable.index);
 
-            if (existingFields.length >= 100)
+            const [totalRow] = await tx
+                .select({ value: count() })
+                .from(formFieldsTable)
+                .where(eq(formFieldsTable.createdBy, formId));
+            const totalFields = totalRow?.value ?? 0;
+            if (totalFields >= 100)
                 throw new Error("A form can contain at most 100 fields");
 
             const insertionPosition = position ?? existingFields.length;
@@ -114,6 +172,7 @@ class FormFieldsService {
                     label,
                     labelKey: createLabelKey(label),
                     createdBy: formId,
+                    pageId,
                     index: "0.00",
                 })
                 .returning({ id: formFieldsTable.id });
@@ -130,6 +189,7 @@ class FormFieldsService {
                         and(
                             eq(formFieldsTable.id, id),
                             eq(formFieldsTable.createdBy, formId),
+                            eq(formFieldsTable.pageId, pageId),
                         ),
                     );
             }
@@ -139,19 +199,67 @@ class FormFieldsService {
     }
 
     public async updateField(payload: UpdateFieldInputType) {
-        const { id, formId, index, ...input } =
+        const { id, formId, pageId, index, ...input } =
             await UpdateFieldInputSchema.parseAsync(payload);
 
-        if (Object.keys(input).length === 0 && index === undefined)
+        if (
+            Object.keys(input).length === 0 &&
+            pageId === undefined &&
+            index === undefined
+        )
             throw new Error(
                 "At least one form field property must be provided",
             );
+
+        let updatedIndex = index;
+        if (pageId) {
+            const [page] = await db
+                .select({ id: formPagesTable.id })
+                .from(formPagesTable)
+                .where(
+                    and(
+                        eq(formPagesTable.id, pageId),
+                        eq(formPagesTable.formId, formId),
+                    ),
+                )
+                .limit(1);
+            if (!page) throw new Error("Page not found in this form");
+
+            const [currentField] = await db
+                .select({ pageId: formFieldsTable.pageId })
+                .from(formFieldsTable)
+                .where(
+                    and(
+                        eq(formFieldsTable.id, id),
+                        eq(formFieldsTable.createdBy, formId),
+                    ),
+                )
+                .limit(1);
+            if (!currentField)
+                throw new Error(`Form field with ID ${id} does not exist`);
+            if (currentField.pageId !== pageId && updatedIndex === undefined) {
+                const [pageCountRow] = await db
+                    .select({ value: count() })
+                    .from(formFieldsTable)
+                    .where(
+                        and(
+                            eq(formFieldsTable.createdBy, formId),
+                            eq(formFieldsTable.pageId, pageId),
+                        ),
+                    );
+                const pageFieldCount = pageCountRow?.value ?? 0;
+                updatedIndex = pageFieldCount / 100;
+            }
+        }
 
         const [updatedField] = await db
             .update(formFieldsTable)
             .set({
                 ...input,
-                ...(index === undefined ? {} : { index: index.toFixed(2) }),
+                ...(pageId === undefined ? {} : { pageId }),
+                ...(updatedIndex === undefined
+                    ? {}
+                    : { index: updatedIndex.toFixed(2) }),
             })
             .where(
                 and(

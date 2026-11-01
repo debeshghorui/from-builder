@@ -7,6 +7,7 @@ import {
     FormOwnerInputSchema,
     UpdateFormInputSchema,
     UserIdInputSchema,
+    validateResponseSettings,
 } from "./model";
 import type {
     CreateFormInputType,
@@ -20,6 +21,13 @@ class FormService {
     public async createForm(payload: CreateFormInputType) {
         const { createdBy, ...input } =
             await CreateFormInputSchema.parseAsync(payload);
+        if (input.isProtected && !input.password)
+            throw new Error("Set a password before enabling form protection");
+        validateResponseSettings({
+            collectEmail: input.collectEmail ?? true,
+            allowAnonymous: input.allowAnonymous ?? false,
+            perRespondentLimit: input.perRespondentLimit ?? null,
+        });
         const [form] = await db
             .insert(formsTable)
             .values({ ...input, createdBy })
@@ -61,9 +69,37 @@ class FormService {
         if (Object.keys(input).length === 0)
             throw new Error("At least one form field must be provided");
 
+        const currentForm = await this.getFormById({ id });
+        if (currentForm.createdBy !== userId)
+            throw new Error(`Form with ID ${id} does not exist`);
+        validateResponseSettings({
+            collectEmail: input.collectEmail ?? currentForm.collectEmail,
+            allowAnonymous: input.allowAnonymous ?? currentForm.allowAnonymous,
+            perRespondentLimit:
+                input.perRespondentLimit === undefined
+                    ? currentForm.perRespondentLimit
+                    : input.perRespondentLimit,
+        });
+        if (
+            (input.isProtected ?? currentForm.isProtected) &&
+            (input.password === undefined
+                ? !currentForm.password
+                : !input.password)
+        ) {
+            throw new Error("Set a password before enabling form protection");
+        }
+        const formUpdate = {
+            ...input,
+            ...(!input.isProtected && input.password === undefined
+                ? { password: null, passwordSalt: null }
+                : input.password !== undefined
+                  ? { passwordSalt: null }
+                  : {}),
+        };
+
         const [form] = await db
             .update(formsTable)
-            .set(input)
+            .set(formUpdate)
             .where(
                 and(
                     eq(formsTable.id, id),

@@ -33,6 +33,11 @@ export const formsTable = pgTable("forms", {
     participantLimit: integer("participant_limit"),
     participantLimitUnit: varchar("participant_limit_unit", { length: 10 }),
 
+    collectEmail: boolean("collect_email").default(true).notNull(),
+    allowAnonymous: boolean("allow_anonymous").default(false).notNull(),
+    responseLimit: integer("response_limit"),
+    perRespondentLimit: integer("per_respondent_limit"),
+
     totalSubmissions: integer("total_submissions"),
     unSubmittedSubmissions: integer("unsubmitted_submissions"),
 

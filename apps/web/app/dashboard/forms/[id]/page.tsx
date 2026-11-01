@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { closestCenter, DndContext, DragOverlay } from "@dnd-kit/core";
@@ -16,12 +16,20 @@ import {
 } from "~/components/form-builder/canvas-field";
 import { FieldInspector } from "~/components/form-builder/field-inspector";
 import { FieldPalette } from "~/components/form-builder/field-palette";
+import { FlowCanvas } from "~/components/form-builder/flow-canvas";
+import { ResponseSettings } from "~/components/form-builder/response-settings";
 import {
     fieldTypeDetails,
     isFormFieldType,
 } from "~/components/form-builder/types";
 import { useFormBuilder } from "~/hooks/form-builder/use-form-builder";
-import { useGetFormById } from "~/hooks/api/form";
+import {
+    useGetFormById,
+    useGetFormFlow,
+    usePublishForm,
+    useUnpublishForm,
+    useUpdateFormField,
+} from "~/hooks/api/form";
 import { Button } from "~/components/ui/button";
 import {
     AlertDialog,
@@ -51,9 +59,24 @@ import {
 export default function FormBuilderPage() {
     const { id: formId } = useParams<{ id: string }>();
     const formQuery = useGetFormById(formId);
-    const builder = useFormBuilder(formId);
+    const flowQuery = useGetFormFlow(formId);
+    const [activePageId, setActivePageId] = useState<string | null>(null);
+    const builder = useFormBuilder(formId, activePageId ?? undefined);
+    const moveField = useUpdateFormField();
+    const publishForm = usePublishForm();
+    const unpublishForm = useUnpublishForm();
     const isMobile = useIsMobile();
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<"questions" | "flow">(
+        "questions",
+    );
+
+    useEffect(() => {
+        const pages = flowQuery.flow?.pages;
+        if (!pages) return;
+        if (pages.some((page) => page.id === activePageId)) return;
+        setActivePageId(pages[0]?.id ?? null);
+    }, [activePageId, flowQuery.flow?.pages]);
     const activePaletteType: unknown = builder.drag.activePaletteType;
     const activePaletteDetails = isFormFieldType(activePaletteType)
         ? fieldTypeDetails[activePaletteType]
@@ -110,22 +133,61 @@ export default function FormBuilderPage() {
         builder.fields.isError ||
         builder.palette.isAdding;
 
+    const moveQuestion = async (fieldId: string, pageId: string) => {
+        try {
+            await moveField.updateFormFieldAsync({
+                formId,
+                id: fieldId,
+                pageId,
+            });
+            setActivePageId(pageId);
+        } catch {
+            // The mutation reports the server error.
+        }
+    };
+
     const renderInspector = () => (
-        <FieldInspector
-            field={
-                builder.selection.isInspectorOpen
-                    ? builder.selection.field
-                    : null
-            }
-            values={builder.editor.values}
-            saving={builder.editor.isSaving || builder.palette.isAdding}
-            labelError={builder.editor.labelError}
-            optionsError={builder.editor.optionsError}
-            onChange={builder.editor.setValues}
-            onSave={(event) => void builder.editor.save(event)}
-            onCancel={builder.selection.requestClose}
-            onDelete={builder.dialogs.deleteField.setField}
-        />
+        <div className="space-y-3">
+            <FieldInspector
+                field={
+                    builder.selection.isInspectorOpen
+                        ? builder.selection.field
+                        : null
+                }
+                values={builder.editor.values}
+                saving={builder.editor.isSaving || builder.palette.isAdding}
+                labelError={builder.editor.labelError}
+                optionsError={builder.editor.optionsError}
+                onChange={builder.editor.setValues}
+                onSave={(event) => void builder.editor.save(event)}
+                onCancel={builder.selection.requestClose}
+                onDelete={builder.dialogs.deleteField.setField}
+            />
+            {builder.selection.field && flowQuery.flow?.pages.length ? (
+                <label className="card-chai block space-y-2 p-4">
+                    <span className="text-sm font-medium">Question page</span>
+                    <select
+                        className="bg-background h-9 w-full rounded-md border px-3 text-sm"
+                        value={
+                            builder.selection.field.pageId ?? activePageId ?? ""
+                        }
+                        onChange={(event) =>
+                            void moveQuestion(
+                                builder.selection.field!.id,
+                                event.target.value,
+                            )
+                        }
+                        aria-label="Move question to page"
+                    >
+                        {flowQuery.flow.pages.map((page) => (
+                            <option key={page.id} value={page.id}>
+                                {page.title}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            ) : null}
+        </div>
     );
 
     const handleMobilePaletteAdd = async (
@@ -148,168 +210,279 @@ export default function FormBuilderPage() {
                     eyebrow="Form builder"
                     title={form.title}
                     description={form.description ?? undefined}
-                    actions={<FormStatus published={form.published} />}
+                    actions={
+                        <>
+                            {form.published ? (
+                                <>
+                                    <Button asChild variant="outline">
+                                        <Link
+                                            href={`/form/${formId}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            Open form
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        disabled={unpublishForm.isPending}
+                                        onClick={() =>
+                                            void unpublishForm.unpublishFormAsync(
+                                                { id: formId },
+                                            )
+                                        }
+                                    >
+                                        {unpublishForm.isPending
+                                            ? "Unpublishing…"
+                                            : "Unpublish"}
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    disabled={publishForm.isPending}
+                                    onClick={() =>
+                                        void publishForm.publishFormAsync({
+                                            id: formId,
+                                        })
+                                    }
+                                >
+                                    {publishForm.isPending
+                                        ? "Publishing…"
+                                        : "Publish form"}
+                                </Button>
+                            )}
+                            <Button asChild variant="outline">
+                                <Link
+                                    href={`/dashboard/forms/${formId}/responses`}
+                                >
+                                    Responses
+                                </Link>
+                            </Button>
+                            <FormStatus published={form.published} />
+                        </>
+                    }
                 />
             </div>
 
-            <DndContext
-                sensors={builder.drag.sensors}
-                collisionDetection={closestCenter}
-                onDragStart={builder.drag.onStart}
-                onDragEnd={(event) => void builder.drag.onEnd(event)}
-                onDragCancel={builder.drag.onCancel}
-            >
-                <div className="flex flex-wrap gap-2 lg:hidden">
-                    <Button
-                        variant="outline"
-                        onClick={() => setIsPaletteOpen(true)}
-                        disabled={paletteDisabled}
-                    >
-                        <Plus aria-hidden="true" />
-                        Add question
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            const selectedField = builder.selection.field;
-                            if (selectedField)
-                                builder.selection.request(selectedField.id);
-                        }}
-                        disabled={!builder.selection.field}
-                    >
-                        Field settings
-                    </Button>
-                </div>
+            <ResponseSettings form={form} />
 
-                <div className="grid min-w-0 gap-4 lg:grid-cols-[15rem_minmax(0,1fr)_20rem]">
-                    {!isMobile && (
-                        <aside className="card-chai h-fit p-4 lg:sticky lg:top-4">
-                            <FieldPalette
-                                disabled={paletteDisabled}
-                                onAdd={(type) => void builder.palette.add(type)}
-                            />
-                        </aside>
-                    )}
+            <div className="flex w-fit gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
+                <Button
+                    variant={activeTab === "questions" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab("questions")}
+                >
+                    Questions
+                </Button>
+                <Button
+                    variant={activeTab === "flow" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab("flow")}
+                >
+                    Page flow
+                </Button>
+            </div>
 
-                    <section
-                        aria-label="Form canvas"
-                        className="min-w-0 space-y-3"
-                    >
-                        <header className="flex items-end justify-between gap-3">
-                            <div>
-                                <h2 className="text-lg font-semibold">
-                                    Form canvas
-                                </h2>
-                                <p className="text-muted-foreground text-sm">
-                                    Add questions and arrange what respondents
-                                    see.
-                                </p>
-                            </div>
-                            <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                                {builder.fields.count} / 100
-                            </span>
-                        </header>
+            {activeTab === "questions" && (
+                <DndContext
+                    sensors={builder.drag.sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={builder.drag.onStart}
+                    onDragEnd={(event) => void builder.drag.onEnd(event)}
+                    onDragCancel={builder.drag.onCancel}
+                >
+                    <div className="flex flex-wrap gap-2 lg:hidden">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsPaletteOpen(true)}
+                            disabled={paletteDisabled}
+                        >
+                            <Plus aria-hidden="true" />
+                            Add question
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                const selectedField = builder.selection.field;
+                                if (selectedField)
+                                    builder.selection.request(selectedField.id);
+                            }}
+                            disabled={!builder.selection.field}
+                        >
+                            Field settings
+                        </Button>
+                    </div>
 
-                        <CanvasDropSurface>
-                            {builder.fields.isLoading ? (
-                                <PageState
-                                    variant="loading"
-                                    title="Loading form fields"
-                                    className="min-h-64"
-                                />
-                            ) : builder.fields.isError ? (
-                                <PageState
-                                    variant="error"
-                                    title="Could not load form fields"
-                                    description={
-                                        builder.fields.error?.message ||
-                                        "Please try again in a moment."
+                    <div className="grid min-w-0 gap-4 lg:grid-cols-[15rem_minmax(0,1fr)_20rem]">
+                        {!isMobile && (
+                            <aside className="card-chai h-fit p-4 lg:sticky lg:top-4">
+                                <FieldPalette
+                                    disabled={paletteDisabled}
+                                    onAdd={(type) =>
+                                        void builder.palette.add(type)
                                     }
-                                    className="min-h-64"
-                                >
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            void builder.fields.refetch()
-                                        }
-                                    >
-                                        Try again
-                                    </Button>
-                                </PageState>
-                            ) : builder.fields.items.length > 0 ? (
-                                <SortableContext
-                                    items={builder.fields.items.map(
-                                        (field) => field.id,
-                                    )}
-                                    strategy={verticalListSortingStrategy}
-                                >
-                                    <ol className="space-y-3">
-                                        {builder.fields.items.map(
-                                            (field, index) => (
-                                                <CanvasField
-                                                    key={field.id}
-                                                    field={field}
-                                                    position={index + 1}
-                                                    disabled={
-                                                        builder.drag
-                                                            .isReordering ||
-                                                        builder.palette.isAdding
-                                                    }
-                                                    selectionDisabled={
-                                                        builder.palette.isAdding
-                                                    }
-                                                    selected={
-                                                        field.id ===
-                                                        builder.selection
-                                                            .fieldId
-                                                    }
-                                                    onSelect={() =>
-                                                        builder.selection.request(
-                                                            field.id,
-                                                        )
-                                                    }
-                                                />
-                                            ),
-                                        )}
-                                    </ol>
-                                </SortableContext>
-                            ) : (
-                                <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-5 text-center">
-                                    <Plus
-                                        aria-hidden="true"
-                                        className="text-muted-foreground size-5"
-                                    />
-                                    <h3 className="text-sm font-semibold">
-                                        Your canvas is empty
-                                    </h3>
-                                    <p className="text-muted-foreground max-w-xs text-sm">
-                                        Drag a question type here or select one
-                                        from the palette to start your form.
+                                />
+                            </aside>
+                        )}
+
+                        <section
+                            aria-label="Form canvas"
+                            className="min-w-0 space-y-3"
+                        >
+                            <header className="flex items-end justify-between gap-3">
+                                <div>
+                                    <h2 className="text-lg font-semibold">
+                                        Form canvas
+                                    </h2>
+                                    <p className="text-muted-foreground text-sm">
+                                        Add questions and arrange what
+                                        respondents see.
                                     </p>
                                 </div>
+                                <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                                    {builder.fields.count} / 100
+                                </span>
+                            </header>
+                            {flowQuery.flow?.pages.length ? (
+                                <label className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+                                    Questions on
+                                    <select
+                                        className="bg-background text-foreground h-9 rounded-md border px-3"
+                                        aria-label="Questions page"
+                                        value={
+                                            activePageId ??
+                                            flowQuery.flow.pages[0]?.id
+                                        }
+                                        onChange={(event) =>
+                                            setActivePageId(event.target.value)
+                                        }
+                                    >
+                                        {flowQuery.flow.pages.map((page) => (
+                                            <option
+                                                key={page.id}
+                                                value={page.id}
+                                            >
+                                                {page.title}
+                                                {page.isStart ? " · Start" : ""}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            ) : (
+                                <div className="border-brand/20 bg-brand/5 rounded-xl border px-4 py-3 text-sm">
+                                    Create your first page in the Page flow tab.
+                                    You can add questions here afterward.
+                                </div>
                             )}
-                        </CanvasDropSurface>
-                    </section>
 
-                    {!isMobile && (
-                        <aside className="min-w-0">{renderInspector()}</aside>
-                    )}
-                </div>
+                            <CanvasDropSurface>
+                                {builder.fields.isLoading ? (
+                                    <PageState
+                                        variant="loading"
+                                        title="Loading form fields"
+                                        className="min-h-64"
+                                    />
+                                ) : builder.fields.isError ? (
+                                    <PageState
+                                        variant="error"
+                                        title="Could not load form fields"
+                                        description={
+                                            builder.fields.error?.message ||
+                                            "Please try again in a moment."
+                                        }
+                                        className="min-h-64"
+                                    >
+                                        <Button
+                                            variant="outline"
+                                            onClick={() =>
+                                                void builder.fields.refetch()
+                                            }
+                                        >
+                                            Try again
+                                        </Button>
+                                    </PageState>
+                                ) : builder.fields.items.length > 0 ? (
+                                    <SortableContext
+                                        items={builder.fields.items.map(
+                                            (field) => field.id,
+                                        )}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        <ol className="space-y-3">
+                                            {builder.fields.items.map(
+                                                (field, index) => (
+                                                    <CanvasField
+                                                        key={field.id}
+                                                        field={field}
+                                                        position={index + 1}
+                                                        disabled={
+                                                            builder.drag
+                                                                .isReordering ||
+                                                            builder.palette
+                                                                .isAdding
+                                                        }
+                                                        selectionDisabled={
+                                                            builder.palette
+                                                                .isAdding
+                                                        }
+                                                        selected={
+                                                            field.id ===
+                                                            builder.selection
+                                                                .fieldId
+                                                        }
+                                                        onSelect={() =>
+                                                            builder.selection.request(
+                                                                field.id,
+                                                            )
+                                                        }
+                                                    />
+                                                ),
+                                            )}
+                                        </ol>
+                                    </SortableContext>
+                                ) : (
+                                    <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-5 text-center">
+                                        <Plus
+                                            aria-hidden="true"
+                                            className="text-muted-foreground size-5"
+                                        />
+                                        <h3 className="text-sm font-semibold">
+                                            Your canvas is empty
+                                        </h3>
+                                        <p className="text-muted-foreground max-w-xs text-sm">
+                                            Drag a question type here or select
+                                            one from the palette to start your
+                                            form.
+                                        </p>
+                                    </div>
+                                )}
+                            </CanvasDropSurface>
+                        </section>
 
-                <DragOverlay>
-                    {activePaletteDetails && ActivePaletteIcon ? (
-                        <div className="card-chai flex items-center gap-3 p-3 shadow-xl">
-                            <ActivePaletteIcon
-                                aria-hidden="true"
-                                className="size-4"
-                            />
-                            <span className="text-sm font-medium">
-                                {activePaletteDetails.label}
-                            </span>
-                        </div>
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
+                        {!isMobile && (
+                            <aside className="min-w-0">
+                                {renderInspector()}
+                            </aside>
+                        )}
+                    </div>
+
+                    <DragOverlay>
+                        {activePaletteDetails && ActivePaletteIcon ? (
+                            <div className="card-chai flex items-center gap-3 p-3 shadow-xl">
+                                <ActivePaletteIcon
+                                    aria-hidden="true"
+                                    className="size-4"
+                                />
+                                <span className="text-sm font-medium">
+                                    {activePaletteDetails.label}
+                                </span>
+                            </div>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
+            )}
+
+            {activeTab === "flow" && <FlowCanvas formId={formId} />}
 
             {isMobile && (
                 <Drawer

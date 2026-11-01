@@ -24,6 +24,7 @@ export type GetFieldsByFormIdInputType = z.infer<
 
 export const ReorderFieldsInputSchema = z.object({
     formId: uuidSchema,
+    pageId: uuidSchema.optional(),
     fieldIds: z
         .array(uuidSchema)
         .max(100)
@@ -37,6 +38,7 @@ export type ReorderFieldsInputType = z.infer<typeof ReorderFieldsInputSchema>;
 // Create field input schema
 export const CreateFieldInputSchema = z.object({
     formId: uuidSchema,
+    pageId: uuidSchema.optional(),
     position: z.number().int().min(0).max(99).optional(),
     label: z.string().trim().min(1).max(55),
     description: z.string().nullable().optional(),
@@ -52,6 +54,7 @@ export type CreateFieldInputType = z.infer<typeof CreateFieldInputSchema>;
 export const UpdateFieldInputSchema = z.object({
     id: uuidSchema,
     formId: uuidSchema,
+    pageId: uuidSchema.optional(),
     label: z.string().trim().min(1).max(55).optional(),
     description: z.string().nullable().optional(),
     placeholder: z.string().nullable().optional(),

@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { formsTable } from "./form";
+import { formPagesTable } from "./form-page";
 
 export const FormFieldTypeEnum = pgEnum("form_field_type", [
     "TEXT",
@@ -43,6 +44,9 @@ export const formFieldsTable = pgTable(
         index: numeric("index", { scale: 2 }).notNull(),
 
         createdBy: uuid("created_by").references(() => formsTable.id),
+        pageId: uuid("page_id").references(() => formPagesTable.id, {
+            onDelete: "cascade",
+        }),
 
         createdAt: timestamp("created_at").defaultNow(),
         updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),

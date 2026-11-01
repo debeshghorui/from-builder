@@ -1,6 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { formFieldsService, formService } from "../../services";
+import {
+    formFieldsService,
+    formFlowService,
+    formResponsesService,
+    formService,
+} from "../../services";
 import { protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import {
@@ -9,11 +14,18 @@ import {
     idOutputSchema,
     formFieldIdInputSchema,
     formFieldsOutputSchema,
+    formFlowOutputSchema,
+    formFlowInputSchema,
+    formResponseDetailInputSchema,
+    formResponseListInputSchema,
+    formResponseListOutputSchema,
+    formResponseOutputSchema,
     formIdInputSchema,
     formListOutputSchema,
     formOutputSchema,
     noInputSchema,
     reorderFormFieldsInputSchema,
+    saveFormFlowInputSchema,
     updateFormFieldInputSchema,
     updateFormInputSchema,
 } from "./model";
@@ -42,6 +54,10 @@ function toFormResponse(form: FormRecord) {
         deletedAt: form.deletedAt,
         participantLimit: form.participantLimit,
         participantLimitUnit: form.participantLimitUnit,
+        collectEmail: form.collectEmail,
+        allowAnonymous: form.allowAnonymous,
+        responseLimit: form.responseLimit,
+        perRespondentLimit: form.perRespondentLimit,
         totalSubmissions: form.totalSubmissions,
         unSubmittedSubmissions: form.unSubmittedSubmissions,
         timeLimit: form.timeLimit,
@@ -64,6 +80,7 @@ function toFormFieldResponse(field: FormFieldRecord) {
         options: field.options,
         index: field.index,
         createdBy: field.createdBy,
+        pageId: field.pageId,
         createdAt: field.createdAt,
         updatedAt: field.updatedAt,
     };
@@ -182,6 +199,20 @@ export const formRouter = router({
         .input(formIdInputSchema)
         .output(formOutputSchema)
         .mutation(async ({ input, ctx }) => {
+            try {
+                await formFlowService.validateForPublish({
+                    formId: input.id,
+                    userId: ctx.user.id,
+                });
+            } catch (error) {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : "The form flow is invalid",
+                });
+            }
             const publishedForm = await formService.publishForm({
                 ...input,
                 userId: ctx.user.id,
@@ -227,6 +258,102 @@ export const formRouter = router({
             });
             return formFields.map((field) => toFormFieldResponse(field));
         }),
+
+    getFormFlow: protectedProcedure
+        .meta({
+            openapi: {
+                method: "GET",
+                path: getPath("/getFormFlow"),
+                tags: TAGS,
+                protect: true,
+            },
+        })
+        .input(formFlowInputSchema)
+        .output(formFlowOutputSchema)
+        .query(async ({ input, ctx }) => {
+            const flow = await formFlowService.getFlow({
+                formId: input.formId,
+                userId: ctx.user.id,
+            });
+            return {
+                pages: flow.pages.map((page) => ({
+                    ...page,
+                    index: Number(page.index) * 100,
+                })),
+                connections: flow.connections.map((connection) => ({
+                    ...connection,
+                    condition: connection.condition ?? null,
+                })),
+            };
+        }),
+
+    saveFormFlow: protectedProcedure
+        .meta({
+            openapi: {
+                method: "PUT",
+                path: getPath("/saveFormFlow"),
+                tags: TAGS,
+                protect: true,
+            },
+        })
+        .input(saveFormFlowInputSchema)
+        .output(formFlowOutputSchema)
+        .mutation(async ({ input, ctx }) => {
+            await formFlowService.saveFlow({
+                ...input,
+                userId: ctx.user.id,
+            });
+            const flow = await formFlowService.getFlow({
+                formId: input.formId,
+                userId: ctx.user.id,
+            });
+            return {
+                pages: flow.pages.map((page) => ({
+                    ...page,
+                    index: Number(page.index) * 100,
+                })),
+                connections: flow.connections.map((connection) => ({
+                    ...connection,
+                    condition: connection.condition ?? null,
+                })),
+            };
+        }),
+
+    getFormResponses: protectedProcedure
+        .meta({
+            openapi: {
+                method: "GET",
+                path: getPath("/getFormResponses"),
+                tags: TAGS,
+                protect: true,
+            },
+        })
+        .input(formResponseListInputSchema)
+        .output(formResponseListOutputSchema)
+        .query(async ({ input, ctx }) =>
+            formResponsesService.listForOwner({
+                formId: input.formId,
+                userId: ctx.user.id,
+            }),
+        ),
+
+    getFormResponse: protectedProcedure
+        .meta({
+            openapi: {
+                method: "GET",
+                path: getPath("/getFormResponse"),
+                tags: TAGS,
+                protect: true,
+            },
+        })
+        .input(formResponseDetailInputSchema)
+        .output(formResponseOutputSchema)
+        .query(async ({ input, ctx }) =>
+            formResponsesService.getForOwner({
+                ...input,
+                userId: ctx.user.id,
+            }),
+        ),
 
     createFormField: protectedProcedure
         .meta({

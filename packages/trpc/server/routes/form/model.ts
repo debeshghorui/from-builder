@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+    formPageConnectionSchema,
+    formPageSchema,
+} from "@repo/services/form-flow/model";
 
 const uuidSchema = z.string().uuid();
 
@@ -10,6 +14,10 @@ export const createFormInputSchema = z.object({
     password: z.string().min(1).max(255).optional(),
     participantLimit: z.number().int().positive().nullable().optional(),
     participantLimitUnit: z.string().max(10).nullable().optional(),
+    collectEmail: z.boolean().optional(),
+    allowAnonymous: z.boolean().optional(),
+    responseLimit: z.number().int().positive().nullable().optional(),
+    perRespondentLimit: z.number().int().positive().nullable().optional(),
     timeLimit: z.number().int().positive().nullable().optional(),
     timeLimitUnit: z.string().max(255).nullable().optional(),
 });
@@ -22,6 +30,10 @@ export const updateFormInputSchema = z.object({
     password: z.string().min(1).max(255).nullable().optional(),
     participantLimit: z.number().int().positive().nullable().optional(),
     participantLimitUnit: z.string().max(10).nullable().optional(),
+    collectEmail: z.boolean().optional(),
+    allowAnonymous: z.boolean().optional(),
+    responseLimit: z.number().int().positive().nullable().optional(),
+    perRespondentLimit: z.number().int().positive().nullable().optional(),
     timeLimit: z.number().int().positive().nullable().optional(),
     timeLimitUnit: z.string().max(255).nullable().optional(),
 });
@@ -41,6 +53,7 @@ export const formFieldTypeSchema = z.enum([
 
 export const createFormFieldInputSchema = z.object({
     formId: uuidSchema,
+    pageId: uuidSchema.optional(),
     position: z.number().int().min(0).max(99).optional(),
     label: z.string().trim().min(1).max(55),
     description: z.string().nullable().optional(),
@@ -53,6 +66,7 @@ export const createFormFieldInputSchema = z.object({
 export const updateFormFieldInputSchema = z.object({
     id: uuidSchema,
     formId: uuidSchema,
+    pageId: uuidSchema.optional(),
     label: z.string().trim().min(1).max(55).optional(),
     description: z.string().nullable().optional(),
     placeholder: z.string().nullable().optional(),
@@ -67,8 +81,64 @@ export const formFieldIdInputSchema = z.object({
     formId: uuidSchema,
 });
 
+export const saveFormFlowInputSchema = z.object({
+    formId: uuidSchema,
+    pages: z.array(formPageSchema).min(1).max(100),
+    connections: z.array(formPageConnectionSchema).max(500),
+});
+
+export const formFlowOutputSchema = z.object({
+    pages: z.array(
+        z.object({
+            id: uuidSchema,
+            title: z.string(),
+            index: z.number(),
+            positionX: z.number(),
+            positionY: z.number(),
+            isStart: z.boolean(),
+        }),
+    ),
+    connections: z.array(
+        z.object({
+            id: uuidSchema,
+            sourcePageId: uuidSchema,
+            targetPageId: uuidSchema,
+            condition: z.unknown().nullable(),
+        }),
+    ),
+});
+
+export const formResponseListInputSchema = z.object({
+    formId: uuidSchema,
+});
+
+export const formFlowInputSchema = z.object({
+    formId: uuidSchema,
+});
+
+export const formResponseDetailInputSchema = z.object({
+    formId: uuidSchema,
+    responseId: uuidSchema,
+});
+
+export const formResponseListOutputSchema = z.array(
+    z.object({
+        id: uuidSchema,
+        email: z.string().nullable(),
+        submittedAt: z.date(),
+    }),
+);
+
+export const formResponseOutputSchema = z.object({
+    id: uuidSchema,
+    email: z.string().nullable(),
+    answers: z.unknown(),
+    submittedAt: z.date(),
+});
+
 export const reorderFormFieldsInputSchema = z.object({
     formId: uuidSchema,
+    pageId: uuidSchema.optional(),
     fieldIds: z.array(uuidSchema).max(100),
 });
 
@@ -88,6 +158,10 @@ export const formOutputSchema = z.object({
     deletedAt: z.date().nullable(),
     participantLimit: z.number().nullable(),
     participantLimitUnit: z.string().nullable(),
+    collectEmail: z.boolean(),
+    allowAnonymous: z.boolean(),
+    responseLimit: z.number().nullable(),
+    perRespondentLimit: z.number().nullable(),
     totalSubmissions: z.number().nullable(),
     unSubmittedSubmissions: z.number().nullable(),
     timeLimit: z.number().nullable(),
@@ -108,6 +182,7 @@ export const formFieldOutputSchema = z.object({
     options: z.unknown().nullable(),
     index: z.string(),
     createdBy: z.string().nullable(),
+    pageId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable(),
 });

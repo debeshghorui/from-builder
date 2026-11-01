@@ -225,7 +225,10 @@ export const useCreateFormField = () => {
     const utils = trpc.useUtils();
     const mutation = trpc.form.createFormField.useMutation({
         onSuccess: async (_field, input) => {
-            await utils.form.getFormFields.invalidate({ id: input.formId });
+            await Promise.all([
+                utils.form.getFormFields.invalidate({ id: input.formId }),
+                utils.form.getFormFlow.invalidate({ formId: input.formId }),
+            ]);
         },
         onError: (error) => {
             toast.error(error.message || "Failed to create form field");
@@ -291,6 +294,35 @@ export const useReorderFormFields = () => {
 
     return {
         reorderFormFieldsAsync: mutation.mutateAsync,
+        ...getMutationState(mutation),
+    };
+};
+
+export const useGetFormFlow = (formId: string) => {
+    const query = trpc.form.getFormFlow.useQuery(
+        { formId },
+        { enabled: Boolean(formId) },
+    );
+    return {
+        flow: query.data,
+        refetch: query.refetch,
+        ...getQueryState(query),
+    };
+};
+
+export const useSaveFormFlow = () => {
+    const utils = trpc.useUtils();
+    const mutation = trpc.form.saveFormFlow.useMutation({
+        onSuccess: async (_flow, input) => {
+            await utils.form.getFormFlow.invalidate({ formId: input.formId });
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to save form flow");
+        },
+    });
+
+    return {
+        saveFormFlowAsync: mutation.mutateAsync,
         ...getMutationState(mutation),
     };
 };

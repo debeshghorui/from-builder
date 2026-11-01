@@ -30,7 +30,7 @@ import {
 
 const canvasDropId = "form-canvas-drop";
 
-export function useFormBuilder(formId: string) {
+export function useFormBuilder(formId: string, pageId?: string) {
     const fieldsQuery = useGetFormFields(formId);
     const createFieldMutation = useCreateFormField();
     const updateFieldMutation = useUpdateFormField();
@@ -58,11 +58,14 @@ export function useFormBuilder(formId: string) {
     const [announcement, setAnnouncement] = useState("");
     const previousSelectedFieldId = useRef<string | undefined>(undefined);
 
-    const fields: FormFieldListItem[] =
+    const allFields: FormFieldListItem[] =
         optimisticFields ?? fieldsQuery.formFields ?? [];
+    const fields = pageId
+        ? allFields.filter((field) => field.pageId === pageId)
+        : allFields;
     const selectedField =
         fields.find((field) => field.id === selectedFieldId) ?? null;
-    const isAtFieldLimit = fields.length >= 100;
+    const isAtFieldLimit = allFields.length >= 100;
     const hasUnsavedChanges = Boolean(
         selectedField &&
         !areEditorValuesEqual(
@@ -144,6 +147,7 @@ export function useFormBuilder(formId: string) {
         try {
             const created = await createFieldMutation.createFormFieldAsync({
                 formId,
+                pageId,
                 position,
                 label: "Untitled question",
                 type,
@@ -295,6 +299,7 @@ export function useFormBuilder(formId: string) {
         try {
             await reorderFieldsMutation.reorderFormFieldsAsync({
                 formId,
+                pageId,
                 fieldIds: reorderedFields.map((field) => field.id),
             });
             setAnnouncement("Field order saved.");
@@ -309,7 +314,7 @@ export function useFormBuilder(formId: string) {
     return {
         fields: {
             items: fields,
-            count: fieldsQuery.formFields?.length ?? 0,
+            count: allFields.length,
             isAtLimit: isAtFieldLimit,
             isLoading: fieldsQuery.isPending,
             isError: fieldsQuery.isError,

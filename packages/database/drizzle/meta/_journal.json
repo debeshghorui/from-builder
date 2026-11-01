@@ -29,6 +29,13 @@
             "when": 1792477937581,
             "tag": "0003_add_user_refresh_token_hash",
             "breakpoints": true
+        },
+        {
+            "idx": 4,
+            "version": "7",
+            "when": 1793518591425,
+            "tag": "0004_careless_slipstream",
+            "breakpoints": true
         }
     ]
 }
