@@ -1,16 +1,19 @@
-import { and, db, desc, eq } from "@repo/database";
+import { and, db, eq } from "@repo/database";
 import { formFieldsTable } from "@repo/database/models/form-field";
+import { formsTable } from "@repo/database/models/form";
 
 import {
     CreateFieldInputSchema,
     DeleteFieldInputSchema,
     GetFieldsByFormIdInputSchema,
+    ReorderFieldsInputSchema,
     UpdateFieldInputSchema,
 } from "./model";
 import type {
     CreateFieldInputType,
     DeleteFieldInputType,
     GetFieldsByFormIdInputType,
+    ReorderFieldsInputType,
     UpdateFieldInputType,
 } from "./model";
 
@@ -27,25 +30,6 @@ function createLabelKey(label: string) {
 }
 
 class FormFieldsService {
-    private async getNextIndex(formId: string): Promise<string> {
-        const [lastField] = await db
-            .select({ index: formFieldsTable.index })
-            .from(formFieldsTable)
-            .where(eq(formFieldsTable.createdBy, formId))
-            .orderBy(desc(formFieldsTable.index))
-            .limit(1);
-
-        const lastIndex = lastField ? Number(lastField.index) : 0;
-        const nextIndex = Number((lastIndex + 0.01).toFixed(2));
-
-        if (nextIndex > 1)
-            throw new Error(
-                "No field positions remain; reorder the fields first",
-            );
-
-        return nextIndex.toFixed(2);
-    }
-
     public async getFieldsByFormId(payload: GetFieldsByFormIdInputType) {
         const { formId } =
             await GetFieldsByFormIdInputSchema.parseAsync(payload);
@@ -57,24 +41,101 @@ class FormFieldsService {
             .orderBy(formFieldsTable.index);
     }
 
+    public async reorderFields(payload: ReorderFieldsInputType) {
+        const { formId, fieldIds } =
+            await ReorderFieldsInputSchema.parseAsync(payload);
+
+        return db.transaction(async (tx) => {
+            await tx
+                .select({ id: formsTable.id })
+                .from(formsTable)
+                .where(eq(formsTable.id, formId))
+                .for("update");
+
+            const currentFields = await tx
+                .select({ id: formFieldsTable.id })
+                .from(formFieldsTable)
+                .where(eq(formFieldsTable.createdBy, formId));
+            const currentIds = new Set(currentFields.map(({ id }) => id));
+
+            if (
+                currentIds.size !== fieldIds.length ||
+                fieldIds.some((id) => !currentIds.has(id))
+            ) {
+                throw new Error(
+                    "The submitted field list does not match this form",
+                );
+            }
+
+            for (const [position, id] of fieldIds.entries()) {
+                await tx
+                    .update(formFieldsTable)
+                    .set({ index: (position / 100).toFixed(2) })
+                    .where(
+                        and(
+                            eq(formFieldsTable.id, id),
+                            eq(formFieldsTable.createdBy, formId),
+                        ),
+                    );
+            }
+
+            return { fieldIds };
+        });
+    }
+
     public async createField(payload: CreateFieldInputType) {
-        const { formId, label, ...input } =
+        const { formId, position, label, ...input } =
             await CreateFieldInputSchema.parseAsync(payload);
 
-        const index = await this.getNextIndex(formId);
-        const [createdField] = await db
-            .insert(formFieldsTable)
-            .values({
-                ...input,
-                label,
-                labelKey: createLabelKey(label),
-                createdBy: formId,
-                index,
-            })
-            .returning({ id: formFieldsTable.id });
+        return db.transaction(async (tx) => {
+            await tx
+                .select({ id: formsTable.id })
+                .from(formsTable)
+                .where(eq(formsTable.id, formId))
+                .for("update");
 
-        if (!createdField) throw new Error("Failed to create form field");
-        return { id: createdField.id };
+            const existingFields = await tx
+                .select({ id: formFieldsTable.id })
+                .from(formFieldsTable)
+                .where(eq(formFieldsTable.createdBy, formId))
+                .orderBy(formFieldsTable.index);
+
+            if (existingFields.length >= 100)
+                throw new Error("A form can contain at most 100 fields");
+
+            const insertionPosition = position ?? existingFields.length;
+            if (insertionPosition > existingFields.length)
+                throw new Error("Field position is outside the form");
+
+            const [createdField] = await tx
+                .insert(formFieldsTable)
+                .values({
+                    ...input,
+                    label,
+                    labelKey: createLabelKey(label),
+                    createdBy: formId,
+                    index: "0.00",
+                })
+                .returning({ id: formFieldsTable.id });
+
+            if (!createdField) throw new Error("Failed to create form field");
+
+            const fieldIds = existingFields.map(({ id }) => id);
+            fieldIds.splice(insertionPosition, 0, createdField.id);
+            for (const [index, id] of fieldIds.entries()) {
+                await tx
+                    .update(formFieldsTable)
+                    .set({ index: (index / 100).toFixed(2) })
+                    .where(
+                        and(
+                            eq(formFieldsTable.id, id),
+                            eq(formFieldsTable.createdBy, formId),
+                        ),
+                    );
+            }
+
+            return { id: createdField.id };
+        });
     }
 
     public async updateField(payload: UpdateFieldInputType) {

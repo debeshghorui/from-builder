@@ -22,9 +22,22 @@ export type GetFieldsByFormIdInputType = z.infer<
     typeof GetFieldsByFormIdInputSchema
 >;
 
+export const ReorderFieldsInputSchema = z.object({
+    formId: uuidSchema,
+    fieldIds: z
+        .array(uuidSchema)
+        .max(100)
+        .refine((ids) => new Set(ids).size === ids.length, {
+            message: "Field IDs must be unique",
+        }),
+});
+
+export type ReorderFieldsInputType = z.infer<typeof ReorderFieldsInputSchema>;
+
 // Create field input schema
 export const CreateFieldInputSchema = z.object({
     formId: uuidSchema,
+    position: z.number().int().min(0).max(99).optional(),
     label: z.string().trim().min(1).max(55),
     description: z.string().nullable().optional(),
     placeholder: z.string().nullable().optional(),

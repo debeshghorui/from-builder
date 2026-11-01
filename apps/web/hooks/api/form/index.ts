@@ -276,3 +276,21 @@ export const useDeleteFormField = () => {
         ...getMutationState(mutation),
     };
 };
+
+// Persist a complete field order and refresh the builder's field query.
+export const useReorderFormFields = () => {
+    const utils = trpc.useUtils();
+    const mutation = trpc.form.reorderFormFields.useMutation({
+        onSuccess: async (_result, input) => {
+            await utils.form.getFormFields.invalidate({ id: input.formId });
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to save field order");
+        },
+    });
+
+    return {
+        reorderFormFieldsAsync: mutation.mutateAsync,
+        ...getMutationState(mutation),
+    };
+};

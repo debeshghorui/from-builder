@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { formFieldsService, formService } from "../../services";
 import { protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
@@ -12,6 +13,7 @@ import {
     formListOutputSchema,
     formOutputSchema,
     noInputSchema,
+    reorderFormFieldsInputSchema,
     updateFormFieldInputSchema,
     updateFormInputSchema,
 } from "./model";
@@ -266,6 +268,22 @@ export const formRouter = router({
             return {
                 id,
             };
+        }),
+
+    reorderFormFields: protectedProcedure
+        .meta({
+            openapi: {
+                method: "POST",
+                path: getPath("/reorderFormFields"),
+                tags: TAGS,
+                protect: true,
+            },
+        })
+        .input(reorderFormFieldsInputSchema)
+        .output(z.object({ fieldIds: z.array(z.string().uuid()) }))
+        .mutation(async ({ input, ctx }) => {
+            await ensureFormOwner(input.formId, ctx.user.id);
+            return formFieldsService.reorderFields(input);
         }),
 
     deleteFormField: protectedProcedure

@@ -41,6 +41,7 @@ export const formFieldTypeSchema = z.enum([
 
 export const createFormFieldInputSchema = z.object({
     formId: uuidSchema,
+    position: z.number().int().min(0).max(99).optional(),
     label: z.string().trim().min(1).max(55),
     description: z.string().nullable().optional(),
     placeholder: z.string().nullable().optional(),
@@ -64,6 +65,11 @@ export const updateFormFieldInputSchema = z.object({
 export const formFieldIdInputSchema = z.object({
     id: uuidSchema,
     formId: uuidSchema,
+});
+
+export const reorderFormFieldsInputSchema = z.object({
+    formId: uuidSchema,
+    fieldIds: z.array(uuidSchema).max(100),
 });
 
 // Form procedure outputs. Password and passwordSalt are intentionally omitted.
