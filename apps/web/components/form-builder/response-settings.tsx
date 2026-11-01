@@ -89,7 +89,7 @@ export function ResponseSettings({ form }: { form: Form }) {
                 </span>
             </summary>
             <form
-                className="space-y-4 border-t border-white/10 p-4"
+                className="border-border space-y-4 border-t p-4"
                 onSubmit={save}
             >
                 <div className="grid gap-4 sm:grid-cols-2">

@@ -68,7 +68,7 @@ export default function FormResponsesPage() {
                         <Link
                             key={response.id}
                             href={`/dashboard/forms/${formId}/responses/${response.id}`}
-                            className="card-chai flex flex-wrap items-center justify-between gap-4 p-4 transition-colors hover:border-white/20"
+                            className="card-chai flex flex-wrap items-center justify-between gap-4 p-4 transition-colors"
                         >
                             <span>
                                 <span className="block font-medium">

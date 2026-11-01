@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
+import {
+    ArrowLeft,
+    ArrowRight,
+    FileQuestion,
+    LockKeyhole,
+    TriangleAlert,
+} from "lucide-react";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { PageState } from "~/components/app-page";
 
 type Answers = Record<string, string>;
 
@@ -62,13 +71,6 @@ export default function RespondentFormPage() {
         setVisitedPages([flow.startPageId]);
     }, [currentPageId, flow?.startPageId]);
 
-    const progress = useMemo(() => {
-        if (!flow || !currentPageId) return 0;
-        const pageCount = Math.max(flow.pages.length, 1);
-        const visited = Math.max(visitedPages.length, 1);
-        return Math.min(100, Math.round((visited / pageCount) * 100));
-    }, [currentPageId, flow, visitedPages.length]);
-
     const setAnswer = (fieldId: string, value: string) => {
         setAnswers((current) => ({ ...current, [fieldId]: value }));
         setMissingFieldIds((current) => current.filter((id) => id !== fieldId));
@@ -79,17 +81,8 @@ export default function RespondentFormPage() {
         setIdentityReady(true);
     };
 
-    const continuePage = () => {
-        if (!currentPage || !flow) return;
-        const missing = currentPage.fields
-            .filter((field) => field.isRequired && !answers[field.id]?.trim())
-            .map((field) => field.id);
-        if (missing.length) {
-            setMissingFieldIds(missing);
-            document.getElementById(`field-${missing[0]}`)?.focus();
-            return;
-        }
-        setMissingFieldIds([]);
+    const getNextPageId = () => {
+        if (!currentPage || !flow) return undefined;
         const outgoing = flow.connections.filter(
             (connection) => connection.sourcePageId === currentPage.id,
         );
@@ -108,8 +101,35 @@ export default function RespondentFormPage() {
         const defaultConnection = outgoing.find(
             (connection) => !connection.condition,
         );
-        const nextPageId =
-            conditional?.targetPageId ?? defaultConnection?.targetPageId;
+        return conditional?.targetPageId ?? defaultConnection?.targetPageId;
+    };
+
+    const continuePage = () => {
+        if (!currentPage || !flow) return;
+        const missing = currentPage.fields
+            .filter((field) => field.isRequired && !answers[field.id]?.trim())
+            .map((field) => field.id);
+        if (missing.length) {
+            setMissingFieldIds(missing);
+            const firstMissingField = currentPage.fields.find(
+                (field) => field.id === missing[0],
+            );
+            const focusTargetId =
+                firstMissingField?.type === "YES_NO"
+                    ? `field-group-${firstMissingField.id}`
+                    : `field-${missing[0]}`;
+            const focusTarget = document.getElementById(focusTargetId);
+            if (focusTarget) {
+                focusTarget.focus();
+                focusTarget.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                });
+            }
+            return;
+        }
+        setMissingFieldIds([]);
+        const nextPageId = getNextPageId();
         if (!nextPageId) {
             const visitedFieldIds = new Set(
                 flow.pages
@@ -195,43 +215,63 @@ export default function RespondentFormPage() {
 
     if (formQuery.isPending) {
         return (
-            <main className="text-muted-foreground mx-auto max-w-3xl px-5 py-20 text-center text-sm">
-                Loading form…
+            <main className="bg-background text-foreground grid min-h-svh place-items-center px-4 py-8 sm:px-6">
+                <div className="w-full max-w-2xl">
+                    <PageState
+                        variant="loading"
+                        title="Loading form"
+                        className="min-h-56"
+                    />
+                </div>
             </main>
         );
     }
     if (formQuery.isError || !form) {
         return (
-            <main className="mx-auto max-w-3xl px-5 py-20 text-center">
-                <h1 className="text-2xl font-semibold">Form unavailable</h1>
-                <p className="text-muted-foreground mt-2">
-                    This form may be unpublished or no longer available.
-                </p>
-                <Button asChild variant="outline" className="mt-6">
-                    <Link href="/">Return home</Link>
-                </Button>
+            <main className="bg-background text-foreground grid min-h-svh place-items-center px-4 py-8 sm:px-6">
+                <PageState
+                    variant="error"
+                    title="This form is unavailable"
+                    description="It may have been unpublished or the link may have changed."
+                    icon={
+                        <FileQuestion aria-hidden="true" className="size-6" />
+                    }
+                    className="w-full max-w-2xl"
+                >
+                    <Button asChild variant="outline" className="mt-4">
+                        <Link href="/">Return home</Link>
+                    </Button>
+                </PageState>
             </main>
         );
     }
 
     const shell = (children: ReactNode) => (
-        <main className="min-h-screen bg-[#10100f] px-4 py-10 text-white sm:px-6 sm:py-16">
-            <div className="mx-auto max-w-2xl">
-                <Link
-                    href="/"
-                    className="text-muted-foreground mb-6 inline-flex items-center gap-2 text-sm hover:text-white"
+        <main className="bg-background text-foreground min-h-svh px-4 py-6 sm:px-6 sm:py-12">
+            <div className="mx-auto w-full max-w-2xl">
+                <div className="mb-8 flex items-center justify-between gap-4 sm:mb-10">
+                    <Link
+                        href="/"
+                        className="text-muted-foreground hover:text-foreground inline-flex min-h-10 items-center gap-2 text-sm transition-colors"
+                    >
+                        <ArrowLeft size={15} aria-hidden="true" /> Home
+                    </Link>
+                    <span className="text-muted-foreground text-xs font-medium">
+                        Form response
+                    </span>
+                </div>
+                <header
+                    className="border-border mb-6 border-b pb-6 sm:mb-8 sm:pb-8"
+                    aria-labelledby="public-form-title"
                 >
-                    <ArrowLeft size={15} aria-hidden="true" /> Home
-                </Link>
-                <header className="mb-6">
-                    <p className="text-brand text-xs font-semibold tracking-[0.2em] uppercase">
-                        Form
-                    </p>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                    <h1
+                        id="public-form-title"
+                        className="text-3xl font-semibold tracking-tight break-words sm:text-4xl"
+                    >
                         {form.title}
                     </h1>
                     {form.description && (
-                        <p className="text-muted-foreground mt-2">
+                        <p className="text-muted-foreground mt-3 max-w-prose text-base leading-7">
                             {form.description}
                         </p>
                     )}
@@ -244,36 +284,50 @@ export default function RespondentFormPage() {
     if (form.passwordRequired && !accessToken) {
         return shell(
             <form
-                className="card-chai space-y-5 p-6 sm:p-8"
+                aria-labelledby="password-gate-title"
+                className="card-chai space-y-6 p-5 sm:p-8"
                 onSubmit={submitPassword}
+                aria-busy={verifyPassword.isPending}
             >
-                <div className="bg-brand/10 text-brand flex size-11 items-center justify-center rounded-2xl">
-                    <LockKeyhole aria-hidden="true" />
+                <div className="flex items-start gap-4">
+                    <div className="bg-muted text-foreground flex size-11 shrink-0 items-center justify-center rounded-lg">
+                        <LockKeyhole aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                        <h2
+                            id="password-gate-title"
+                            className="text-xl font-semibold"
+                        >
+                            Password required
+                        </h2>
+                        <p className="text-muted-foreground mt-1 text-sm leading-6">
+                            Enter the password provided by the form owner to
+                            continue.
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <h2 className="text-xl font-semibold">Password required</h2>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                        Enter the form password to continue.
-                    </p>
-                </div>
-                <label className="block space-y-2 text-sm">
-                    <span>Password</span>
-                    <input
+                <div className="space-y-2">
+                    <Label htmlFor="form-password">Password</Label>
+                    <Input
+                        id="form-password"
                         autoFocus
-                        className="bg-background text-foreground h-11 w-full rounded-md border px-3"
                         type="password"
                         autoComplete="current-password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         required
                     />
-                </label>
+                </div>
                 {accessError && (
                     <p role="alert" className="text-destructive text-sm">
                         {accessError}
                     </p>
                 )}
-                <Button type="submit" disabled={verifyPassword.isPending}>
+                <Button
+                    type="submit"
+                    className="w-full sm:w-auto"
+                    disabled={verifyPassword.isPending}
+                >
                     {verifyPassword.isPending ? "Checking…" : "Continue"}
                     <ArrowRight aria-hidden="true" />
                 </Button>
@@ -284,39 +338,49 @@ export default function RespondentFormPage() {
     if (shouldCollectIdentity && !identityReady) {
         return shell(
             <form
-                className="card-chai space-y-5 p-6 sm:p-8"
+                aria-labelledby="identity-gate-title"
+                className="card-chai space-y-6 p-5 sm:p-8"
                 onSubmit={(event) => {
                     event.preventDefault();
                     enterForm(email);
                 }}
             >
-                <h2 className="text-xl font-semibold">Before you begin</h2>
-                <p className="text-muted-foreground text-sm">
-                    {form.allowAnonymous
-                        ? "You can include your email or continue anonymously."
-                        : "Enter your email to begin this form."}
-                </p>
-                <label className="block space-y-2 text-sm">
-                    <span>
+                <div>
+                    <h2
+                        id="identity-gate-title"
+                        className="text-xl font-semibold"
+                    >
+                        Before you begin
+                    </h2>
+                    <p className="text-muted-foreground mt-1 text-sm leading-6">
+                        {form.allowAnonymous
+                            ? "Add your email to identify your response, or continue anonymously."
+                            : "Enter your email so the form owner can identify your response."}
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="respondent-email">
                         Email address{form.allowAnonymous ? " (optional)" : ""}
-                    </span>
-                    <input
-                        className="bg-background text-foreground h-11 w-full rounded-md border px-3"
+                    </Label>
+                    <Input
+                        id="respondent-email"
                         type="email"
                         autoComplete="email"
+                        placeholder="you@example.com"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         required={!form.allowAnonymous}
                     />
-                </label>
-                <div className="flex flex-wrap gap-2">
-                    <Button type="submit">
+                </div>
+                <div className="grid gap-2 sm:flex sm:flex-wrap">
+                    <Button type="submit" className="w-full sm:w-auto">
                         Continue <ArrowRight aria-hidden="true" />
                     </Button>
                     {form.allowAnonymous && (
                         <Button
                             type="button"
                             variant="outline"
+                            className="w-full sm:w-auto"
                             onClick={() => enterForm("")}
                         >
                             Continue anonymously
@@ -329,69 +393,133 @@ export default function RespondentFormPage() {
 
     if (flowQuery.isPending) {
         return shell(
-            <div className="card-chai text-muted-foreground p-8 text-sm">
-                Loading questions…
-            </div>,
+            <PageState
+                variant="loading"
+                title="Loading questions"
+                className="min-h-56"
+            />,
         );
     }
     if (flowQuery.isError || !flow || !currentPage) {
         return shell(
-            <div className="card-chai space-y-3 p-6">
-                <h2 className="font-semibold">This form is not ready</h2>
-                <p className="text-muted-foreground text-sm">
-                    {flowQuery.error?.message ??
-                        "The form owner has not added a starting page."}
-                </p>
-            </div>,
+            <PageState
+                variant="error"
+                title="This form is not ready"
+                description={
+                    flowQuery.error?.message ??
+                    "The form owner has not added a starting page."
+                }
+                icon={<TriangleAlert aria-hidden="true" className="size-6" />}
+            >
+                <Button asChild variant="outline" className="mt-4">
+                    <Link href="/">Return home</Link>
+                </Button>
+            </PageState>,
         );
     }
 
     if (submitted) {
         return shell(
-            <div className="card-chai space-y-3 p-8 text-center">
-                <div className="bg-brand/10 text-brand mx-auto flex size-12 items-center justify-center rounded-2xl">
-                    ✓
+            <div className="card-chai space-y-6 p-6 text-center sm:p-8">
+                <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-green-500/10 text-green-600">
+                    <svg
+                        aria-hidden="true"
+                        className="size-8"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 13l4 4L19 7"
+                        />
+                    </svg>
                 </div>
-                <h2 className="text-xl font-semibold">Response submitted</h2>
-                <p className="text-muted-foreground text-sm">
-                    Thank you for completing this form.
-                </p>
+                <div>
+                    <h2 className="text-2xl font-semibold">
+                        Response submitted
+                    </h2>
+                    <p className="text-muted-foreground mt-2 text-base leading-7">
+                        Thank you for completing this form.
+                    </p>
+                </div>
+                <Button
+                    asChild
+                    variant="outline"
+                    className="mx-auto w-full sm:w-auto"
+                >
+                    <Link href="/">Return home</Link>
+                </Button>
             </div>,
         );
     }
 
     if (completed) {
         return shell(
-            <div className="card-chai space-y-5 p-8 text-center">
-                <div className="bg-brand/10 text-brand mx-auto flex size-12 items-center justify-center rounded-2xl">
-                    ✓
+            <div className="card-chai space-y-6 p-6 sm:p-8">
+                <div className="flex items-start gap-4">
+                    <div className="bg-muted text-foreground flex size-12 shrink-0 items-center justify-center rounded-xl">
+                        <FileQuestion aria-hidden="true" className="size-6" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-xl font-semibold">
+                            Review your response
+                        </h2>
+                        <p className="text-muted-foreground mt-1 text-sm leading-6">
+                            You can go back to review your answers or submit the
+                            form now.
+                        </p>
+                    </div>
                 </div>
-                <h2 className="text-xl font-semibold">Ready to submit?</h2>
-                <p className="text-muted-foreground text-sm">
-                    You can go back to review your answers or submit the form
-                    now.
-                </p>
                 {submitError && (
-                    <p role="alert" className="text-destructive text-sm">
-                        {submitError}
-                    </p>
+                    <div
+                        role="alert"
+                        className="bg-destructive/10 border-destructive/20 flex items-start gap-3 rounded-lg border p-4"
+                    >
+                        <TriangleAlert
+                            aria-hidden="true"
+                            className="text-destructive mt-0.5 size-5 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                            <p className="text-destructive text-sm font-medium">
+                                Submission failed
+                            </p>
+                            <p className="text-destructive/80 mt-1 text-sm">
+                                {submitError}
+                            </p>
+                        </div>
+                    </div>
                 )}
-                <div className="flex justify-center gap-2">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => setCompleted(false)}
+                        disabled={submitResponse.isPending}
+                        className="w-full sm:w-auto"
                     >
+                        <ArrowLeft aria-hidden="true" className="mr-2 size-4" />
                         Review answers
                     </Button>
                     <Button
                         type="button"
                         onClick={() => void submitAnswers()}
                         disabled={submitResponse.isPending}
+                        className="w-full sm:w-auto"
                     >
-                        {submitResponse.isPending
-                            ? "Submitting…"
-                            : "Submit response"}
+                        {submitResponse.isPending ? (
+                            <>Submitting…</>
+                        ) : (
+                            <>
+                                Submit response
+                                <ArrowRight
+                                    aria-hidden="true"
+                                    className="ml-2 size-4"
+                                />
+                            </>
+                        )}
                     </Button>
                 </div>
             </div>,
@@ -399,52 +527,93 @@ export default function RespondentFormPage() {
     }
 
     return shell(
-        <section className="card-chai overflow-hidden">
-            <div className="h-1 bg-white/5">
-                <div
-                    className="bg-brand h-full transition-[width]"
-                    style={{ width: `${progress}%` }}
-                />
-            </div>
-            <div className="space-y-6 p-6 sm:p-8">
-                <div>
-                    <p className="text-muted-foreground text-xs">
-                        Step {visitedPages.length}
-                    </p>
-                    <h2 className="mt-1 text-xl font-semibold">
-                        {currentPage.title}
-                    </h2>
+        <section
+            className="card-chai overflow-hidden"
+            aria-labelledby="current-page-title"
+        >
+            <div className="space-y-8 p-5 sm:p-8">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                        <p
+                            className="text-muted-foreground text-xs font-medium"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            Step {visitedPages.length} in your form
+                        </p>
+                        <h2
+                            id="current-page-title"
+                            className="mt-1 text-xl font-semibold break-words sm:text-2xl"
+                        >
+                            {currentPage.title}
+                        </h2>
+                    </div>
+                    <span className="text-muted-foreground border-border shrink-0 rounded-md border px-2.5 py-1 text-xs">
+                        {currentPage.fields.length}{" "}
+                        {currentPage.fields.length === 1
+                            ? "question"
+                            : "questions"}
+                    </span>
                 </div>
-                <div className="space-y-5">
+                <div className="divide-border divide-y">
                     {currentPage.fields.map((field) => (
-                        <div key={field.id} className="space-y-2">
-                            <label
-                                className="block text-sm font-medium"
-                                htmlFor={`field-${field.id}`}
-                            >
+                        <fieldset
+                            key={field.id}
+                            id={
+                                field.type === "YES_NO"
+                                    ? `field-group-${field.id}`
+                                    : undefined
+                            }
+                            tabIndex={
+                                field.type === "YES_NO" &&
+                                missingFieldIds.includes(field.id)
+                                    ? 0
+                                    : undefined
+                            }
+                            className={`min-w-0 space-y-2.5 py-6 first:pt-0 last:pb-0 ${missingFieldIds.includes(field.id) ? "ring-destructive/20 ring-offset-background rounded-lg ring-2 ring-offset-2" : ""}`}
+                            aria-invalid={missingFieldIds.includes(field.id)}
+                            aria-describedby={
+                                missingFieldIds.includes(field.id)
+                                    ? `field-error-${field.id}`
+                                    : field.description
+                                      ? `field-help-${field.id}`
+                                      : undefined
+                            }
+                        >
+                            <legend className="block text-sm font-medium">
                                 {field.label}
                                 {field.isRequired ? (
-                                    <span
-                                        className="text-destructive ml-1"
-                                        aria-hidden="true"
-                                    >
-                                        *
-                                    </span>
+                                    <>
+                                        <span
+                                            className="text-destructive ml-1"
+                                            aria-hidden="true"
+                                        >
+                                            *
+                                        </span>
+                                        <span className="sr-only">
+                                            {" "}
+                                            required
+                                        </span>
+                                    </>
                                 ) : null}
-                            </label>
+                            </legend>
                             {field.description && (
-                                <p className="text-muted-foreground text-sm">
+                                <p
+                                    id={`field-help-${field.id}`}
+                                    className="text-muted-foreground text-sm leading-6"
+                                >
                                     {field.description}
                                 </p>
                             )}
                             {field.type === "YES_NO" ? (
                                 <div className="flex gap-3">
                                     {["Yes", "No"].map((option) => (
-                                        <label
+                                        <div
                                             key={option}
-                                            className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-3 text-sm"
+                                            className="border-border hover:bg-muted/50 has-[:focus-visible]:ring-ring flex min-h-12 flex-1 cursor-pointer items-center gap-2 rounded-lg border px-4 py-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
                                         >
                                             <input
+                                                id={`field-${field.id}-${option.toLowerCase()}`}
                                                 type="radio"
                                                 name={field.id}
                                                 value={option}
@@ -454,16 +623,33 @@ export default function RespondentFormPage() {
                                                 onChange={() =>
                                                     setAnswer(field.id, option)
                                                 }
+                                                aria-invalid={missingFieldIds.includes(
+                                                    field.id,
+                                                )}
+                                                aria-describedby={
+                                                    missingFieldIds.includes(
+                                                        field.id,
+                                                    )
+                                                        ? `field-error-${field.id}`
+                                                        : field.description
+                                                          ? `field-help-${field.id}`
+                                                          : undefined
+                                                }
                                                 required={field.isRequired}
                                             />
-                                            {option}
-                                        </label>
+                                            <Label
+                                                htmlFor={`field-${field.id}-${option.toLowerCase()}`}
+                                                className="cursor-pointer font-normal"
+                                            >
+                                                {option}
+                                            </Label>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
-                                <input
+                                <Input
                                     id={`field-${field.id}`}
-                                    className={`bg-background text-foreground h-11 w-full rounded-md border px-3 ${missingFieldIds.includes(field.id) ? "border-destructive" : ""}`}
+                                    aria-label={field.label}
                                     type={getFieldInputType(field.type)}
                                     placeholder={field.placeholder ?? ""}
                                     value={answers[field.id] ?? ""}
@@ -473,33 +659,44 @@ export default function RespondentFormPage() {
                                     aria-invalid={missingFieldIds.includes(
                                         field.id,
                                     )}
+                                    aria-describedby={
+                                        missingFieldIds.includes(field.id)
+                                            ? `field-error-${field.id}`
+                                            : field.description
+                                              ? `field-help-${field.id}`
+                                              : undefined
+                                    }
                                     required={field.isRequired}
                                 />
                             )}
                             {missingFieldIds.includes(field.id) && (
-                                <p className="text-destructive text-xs">
+                                <p
+                                    id={`field-error-${field.id}`}
+                                    className="text-destructive mt-2 text-sm font-medium"
+                                    role="alert"
+                                >
                                     This answer is required.
                                 </p>
                             )}
-                        </div>
+                        </fieldset>
                     ))}
                 </div>
-                <div className="flex items-center justify-between border-t border-white/10 pt-5">
+                <div className="border-border flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
                     <Button
                         type="button"
                         variant="ghost"
                         onClick={goBack}
                         disabled={visitedPages.length < 2}
+                        className="w-full sm:w-auto"
                     >
                         <ArrowLeft aria-hidden="true" /> Back
                     </Button>
-                    <Button type="button" onClick={continuePage}>
-                        {flow.connections.some(
-                            (connection) =>
-                                connection.sourcePageId === currentPage.id,
-                        )
-                            ? "Next"
-                            : "Review"}
+                    <Button
+                        type="button"
+                        onClick={continuePage}
+                        className="w-full sm:w-auto sm:min-w-32"
+                    >
+                        {getNextPageId() ? "Next step" : "Review response"}
                         <ArrowRight aria-hidden="true" />
                     </Button>
                 </div>

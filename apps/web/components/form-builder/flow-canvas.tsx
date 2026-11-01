@@ -293,7 +293,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
             </div>
 
             {pages.length > 1 && (
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/10 p-3">
+                <div className="card-chai flex flex-wrap items-center gap-2 p-3">
                     <label className="sr-only" htmlFor="connection-source">
                         From page
                     </label>
@@ -314,7 +314,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                     </select>
                     <ArrowRight
                         size={16}
-                        className="text-brand"
+                        className="text-muted-foreground"
                         aria-hidden="true"
                     />
                     <label className="sr-only" htmlFor="connection-target">
@@ -345,7 +345,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
             )}
 
             {connectFrom !== null && (
-                <div className="border-brand/25 bg-brand/5 text-muted-foreground rounded-xl border px-4 py-3 text-sm">
+                <div className="text-muted-foreground border-border bg-muted/40 rounded-xl border px-4 py-3 text-sm">
                     {connectFrom
                         ? "Choose a destination page to connect."
                         : "Choose the source page, then choose its destination."}
@@ -354,7 +354,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
 
             {pages.length === 0 ? (
                 <div className="card-chai flex min-h-72 flex-col items-center justify-center gap-3 p-8 text-center">
-                    <div className="bg-brand/10 text-brand flex size-12 items-center justify-center rounded-2xl">
+                    <div className="bg-muted text-foreground flex size-12 items-center justify-center rounded-xl">
                         <ArrowDownRight aria-hidden="true" />
                     </div>
                     <h3 className="font-semibold">
@@ -369,7 +369,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                     </Button>
                 </div>
             ) : (
-                <div className="overflow-auto rounded-2xl border border-white/10 bg-[#10100f]">
+                <div className="border-border bg-background overflow-auto rounded-xl border">
                     <div
                         ref={canvasRef}
                         className="relative"
@@ -395,7 +395,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                                 >
                                     <path
                                         d="M 0 0 L 10 5 L 0 10 z"
-                                        fill="#a78bfa"
+                                        fill="currentColor"
                                     />
                                 </marker>
                             </defs>
@@ -412,9 +412,10 @@ export function FlowCanvas({ formId }: { formId: string }) {
                                         key={connection.id}
                                         d={connectionPath(source, target)}
                                         fill="none"
-                                        stroke="#a78bfa"
+                                        stroke="currentColor"
                                         strokeWidth="2"
                                         markerEnd="url(#flow-arrow)"
+                                        className="text-muted-foreground"
                                     />
                                 );
                             })}
@@ -427,7 +428,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                             return (
                                 <article
                                     key={page.id}
-                                    className={`absolute w-[236px] overflow-hidden rounded-xl border bg-[#191918] shadow-xl transition-shadow ${page.isStart ? "border-brand/70 shadow-brand/10" : "border-white/10"} ${connectFrom !== null ? "cursor-crosshair" : ""}`}
+                                    className={`bg-card text-card-foreground absolute w-[236px] overflow-hidden rounded-xl border ${page.isStart ? "border-foreground/40" : "border-border"} ${connectFrom !== null ? "cursor-crosshair" : ""}`}
                                     style={{
                                         left: page.positionX,
                                         top: page.positionY,
@@ -442,7 +443,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                                             addConnection(connectFrom, page.id);
                                     }}
                                 >
-                                    <header className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
+                                    <header className="border-border flex items-center gap-2 border-b px-3 py-2">
                                         <button
                                             type="button"
                                             aria-label={`Move ${page.title}`}
@@ -506,7 +507,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                                             </span>
                                             <button
                                                 type="button"
-                                                className={`rounded-full px-2 py-1 text-[11px] ${page.isStart ? "bg-brand/15 text-brand" : "text-muted-foreground hover:text-foreground bg-white/5"}`}
+                                                className={`rounded-md border px-2 py-1 text-[11px] ${page.isStart ? "border-foreground/30 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
                                                 onClick={(event) => {
                                                     event.stopPropagation();
                                                     updatePage(page.id, {
@@ -520,7 +521,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                                             </button>
                                         </div>
                                         <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                                            <span className="bg-brand size-2 rounded-full" />
+                                            <span className="bg-foreground size-2 rounded-full" />
                                             {connections.filter(
                                                 (connection) =>
                                                     connection.sourcePageId ===
@@ -554,7 +555,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                             return (
                                 <div
                                     key={connection.id}
-                                    className="grid gap-2 rounded-lg border border-white/10 p-3 md:grid-cols-[1fr_auto_1fr_1.2fr_1fr_auto] md:items-center"
+                                    className="border-border grid gap-2 rounded-lg border p-3 md:grid-cols-[1fr_auto_1fr_1.2fr_1fr_auto] md:items-center"
                                 >
                                     <select
                                         className="bg-background h-9 rounded-md border px-2 text-sm"
@@ -588,7 +589,7 @@ export function FlowCanvas({ formId }: { formId: string }) {
                                     </select>
                                     <ArrowRight
                                         size={16}
-                                        className="text-brand hidden md:block"
+                                        className="text-muted-foreground hidden md:block"
                                         aria-hidden="true"
                                     />
                                     <select

@@ -15,7 +15,7 @@ export function DashboardPage({
     return (
         <main
             className={cn(
-                "mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8",
+                "mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8",
                 className,
             )}
         >
@@ -60,7 +60,7 @@ export function PageHeading({
                 )}
             </div>
             {actions && (
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex w-full max-w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
                     {actions}
                 </div>
             )}

@@ -53,7 +53,7 @@ export function FieldInspector({
         <section className="card-chai p-4 sm:p-5">
             <div className="mb-5 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <p className="text-muted-foreground text-xs font-medium">
                         {fieldTypeDetails[values.type].label}
                     </p>
                     <h2 className="mt-1 truncate text-base font-semibold">

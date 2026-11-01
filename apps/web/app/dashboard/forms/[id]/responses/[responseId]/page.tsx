@@ -68,8 +68,8 @@ export default function FormResponseDetailPage() {
                 }).format(new Date(response.data.submittedAt))}
             />
             <section className="card-chai space-y-5 p-5 sm:p-7">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                    <div className="bg-brand/10 text-brand flex size-10 items-center justify-center rounded-xl">
+                <div className="border-border flex items-center gap-3 border-b pb-4">
+                    <div className="bg-muted text-foreground flex size-10 items-center justify-center rounded-xl">
                         <FileText size={18} aria-hidden="true" />
                     </div>
                     <div>
@@ -86,7 +86,7 @@ export default function FormResponseDetailPage() {
                         This response has no recorded answers.
                     </p>
                 ) : (
-                    <dl className="divide-y divide-white/10">
+                    <dl className="divide-border divide-y">
                         {Object.entries(answers).map(([fieldId, answer]) => (
                             <div
                                 key={fieldId}

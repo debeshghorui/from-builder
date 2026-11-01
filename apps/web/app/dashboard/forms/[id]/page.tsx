@@ -18,6 +18,7 @@ import { FieldInspector } from "~/components/form-builder/field-inspector";
 import { FieldPalette } from "~/components/form-builder/field-palette";
 import { FlowCanvas } from "~/components/form-builder/flow-canvas";
 import { ResponseSettings } from "~/components/form-builder/response-settings";
+import { FormSharingCard } from "~/components/form-builder/form-sharing-card";
 import {
     fieldTypeDetails,
     isFormFieldType,
@@ -49,12 +50,7 @@ import {
     DrawerTitle,
 } from "~/components/ui/drawer";
 import { useIsMobile } from "~/hooks/use-mobile";
-import {
-    DashboardPage,
-    FormStatus,
-    PageHeading,
-    PageState,
-} from "~/components/app-page";
+import { DashboardPage, PageHeading, PageState } from "~/components/app-page";
 
 export default function FormBuilderPage() {
     const { id: formId } = useParams<{ id: string }>();
@@ -199,74 +195,71 @@ export default function FormBuilderPage() {
 
     return (
         <DashboardPage>
-            <div className="space-y-3">
-                <Button asChild variant="ghost" className="mb-3 -ml-3">
-                    <Link href="/dashboard/forms">
-                        <ArrowLeft aria-hidden="true" />
-                        All forms
-                    </Link>
-                </Button>
-                <PageHeading
-                    eyebrow="Form builder"
-                    title={form.title}
-                    description={form.description ?? undefined}
-                    actions={
-                        <>
-                            {form.published ? (
-                                <>
-                                    <Button asChild variant="outline">
-                                        <Link
-                                            href={`/form/${formId}`}
-                                            target="_blank"
-                                            rel="noreferrer"
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch">
+                <div className="min-w-0 space-y-3">
+                    <Button asChild variant="ghost" className="mb-3 -ml-3">
+                        <Link href="/dashboard/forms">
+                            <ArrowLeft aria-hidden="true" />
+                            All forms
+                        </Link>
+                    </Button>
+                    <PageHeading
+                        eyebrow="Form builder"
+                        title={form.title}
+                        description={form.description ?? undefined}
+                        actions={
+                            <div className="flex min-h-[4.5rem] w-full flex-wrap content-start items-center gap-2 sm:min-h-9 sm:w-auto sm:justify-end">
+                                {form.published ? (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            disabled={unpublishForm.isPending}
+                                            onClick={() =>
+                                                void unpublishForm.unpublishFormAsync(
+                                                    { id: formId },
+                                                )
+                                            }
                                         >
-                                            Open form
-                                        </Link>
-                                    </Button>
+                                            {unpublishForm.isPending
+                                                ? "Unpublishing…"
+                                                : "Unpublish"}
+                                        </Button>
+                                    </>
+                                ) : (
                                     <Button
-                                        variant="outline"
-                                        disabled={unpublishForm.isPending}
+                                        disabled={publishForm.isPending}
                                         onClick={() =>
-                                            void unpublishForm.unpublishFormAsync(
-                                                { id: formId },
-                                            )
+                                            void publishForm.publishFormAsync({
+                                                id: formId,
+                                            })
                                         }
                                     >
-                                        {unpublishForm.isPending
-                                            ? "Unpublishing…"
-                                            : "Unpublish"}
+                                        {publishForm.isPending
+                                            ? "Publishing…"
+                                            : "Publish form"}
                                     </Button>
-                                </>
-                            ) : (
-                                <Button
-                                    disabled={publishForm.isPending}
-                                    onClick={() =>
-                                        void publishForm.publishFormAsync({
-                                            id: formId,
-                                        })
-                                    }
-                                >
-                                    {publishForm.isPending
-                                        ? "Publishing…"
-                                        : "Publish form"}
+                                )}
+                                <Button asChild variant="outline">
+                                    <Link
+                                        href={`/dashboard/forms/${formId}/responses`}
+                                    >
+                                        Responses
+                                    </Link>
                                 </Button>
-                            )}
-                            <Button asChild variant="outline">
-                                <Link
-                                    href={`/dashboard/forms/${formId}/responses`}
-                                >
-                                    Responses
-                                </Link>
-                            </Button>
-                            <FormStatus published={form.published} />
-                        </>
-                    }
+                            </div>
+                        }
+                    />
+                </div>
+                <FormSharingCard
+                    formId={formId}
+                    formTitle={form.title}
+                    published={form.published}
                 />
             </div>
 
             <ResponseSettings form={form} />
 
-            <div className="flex w-fit gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
+            <div className="border-border bg-muted/40 flex w-fit gap-1 rounded-xl border p-1">
                 <Button
                     variant={activeTab === "questions" ? "default" : "ghost"}
                     size="sm"
@@ -369,7 +362,7 @@ export default function FormBuilderPage() {
                                     </select>
                                 </label>
                             ) : (
-                                <div className="border-brand/20 bg-brand/5 rounded-xl border px-4 py-3 text-sm">
+                                <div className="text-muted-foreground border-border bg-muted/40 rounded-xl border px-4 py-3 text-sm">
                                     Create your first page in the Page flow tab.
                                     You can add questions here afterward.
                                 </div>
@@ -468,7 +461,7 @@ export default function FormBuilderPage() {
 
                     <DragOverlay>
                         {activePaletteDetails && ActivePaletteIcon ? (
-                            <div className="card-chai flex items-center gap-3 p-3 shadow-xl">
+                            <div className="card-chai flex items-center gap-3 p-3">
                                 <ActivePaletteIcon
                                     aria-hidden="true"
                                     className="size-4"

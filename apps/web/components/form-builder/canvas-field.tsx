@@ -58,7 +58,7 @@ export function CanvasField({
                 transform: CSS.Transform.toString(transform),
                 transition,
             }}
-            className={`card-chai flex items-start gap-3 p-4 ${isDragging ? "z-10 opacity-70 shadow-lg" : ""} ${selected ? "border-primary ring-primary/30 ring-1" : ""}`}
+            className={`card-chai flex items-start gap-3 p-4 ${isDragging ? "z-10 opacity-70" : ""} ${selected ? "border-primary ring-primary/30 ring-1" : ""}`}
         >
             <Button
                 ref={setActivatorNodeRef}
